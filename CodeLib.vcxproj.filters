@@ -39,6 +39,12 @@
     <ClInclude Include="src\ProcessImpl.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="include\IIni.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\IniFileImpl.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -51,6 +57,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\ProcessImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\IniFileImpl.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

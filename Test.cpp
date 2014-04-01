@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "Common.h"
 #include <tchar.h>
+#include "IIni.h"
 using  namespace CODELIB;
 
 void TestProcess()
@@ -36,9 +37,30 @@ void TestProcess()
     }
 }
 
+void TestIniFile()
+{
+    IIniFile* pIniFile = (IIniFile*)CreateInstance(CODELIB_INIFILE);
+
+    if(NULL == pIniFile)
+        return ;
+
+    if(pIniFile->Open(_T("H:\\Project\\CodeLib\\CodeLib\\Debug\\Test.ini")))
+    {
+        DWORD dwValue = pIniFile->ReadDword(_T("Hello"), _T("DWORD"));
+        DOUBLE dwDouble = pIniFile->ReadDouble(_T("Hello"), _T("DOUBLE"));
+        TCHAR sBuf[MAX_PATH] = {0};
+        pIniFile->ReadString(_T("Hello"), _T("STRING"), sBuf);
+        pIniFile->Close();
+    }
+
+    delete pIniFile;
+    pIniFile = NULL;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
-    TestProcess();
+//    TestProcess();
+    TestIniFile();
     return 0;
 }
 
