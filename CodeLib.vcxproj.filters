@@ -51,6 +51,12 @@
     <ClInclude Include="src\FileMapImpl.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="include\IMiniDump.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MiniDumpImpl.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -69,6 +75,9 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\FileMapImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MiniDumpImpl.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

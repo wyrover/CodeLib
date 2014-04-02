@@ -3,7 +3,7 @@
 #include "ProcessImpl.h"
 #include "IniFileImpl.h"
 #include "FileMapImpl.h"
-
+#include "MiniDumpImpl.h"
 namespace CODELIB
 {
     LPVOID CreateInstance(INTERFACE_NAME interfaceName)
@@ -23,11 +23,18 @@ namespace CODELIB
                 pInterface = new CODELIB::CIniFileImpl;
                 break;
             }
-			case CODELIB_FILEMAP:
-				{
-					pInterface=new CODELIB::CFileMapImpl;
-					break;
-				}
+
+            case CODELIB_FILEMAP:
+            {
+                pInterface = new CODELIB::CFileMapImpl;
+                break;
+            }
+
+            case CODELIB_MINIDUMP:
+            {
+                pInterface = new CODELIB::CMiniDumpImpl;
+                break;
+            }
 
             default:
                 break;

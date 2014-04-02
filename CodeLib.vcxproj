@@ -84,7 +84,9 @@
     <ClInclude Include="include\Common.h" />
     <ClInclude Include="include\IFileMap.h" />
     <ClInclude Include="include\IIni.h" />
+    <ClInclude Include="include\IMiniDump.h" />
     <ClInclude Include="include\IProcess.h" />
+    <ClInclude Include="src\MiniDumpImpl.h" />
     <ClInclude Include="src\FileMapImpl.h" />
     <ClInclude Include="src\IniFileImpl.h" />
     <ClInclude Include="src\ProcessImpl.h" />
@@ -92,6 +94,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\MiniDumpImpl.cpp" />
     <ClCompile Include="src\Common.cpp" />
     <ClCompile Include="src\FileMapImpl.cpp" />
     <ClCompile Include="src\IniFileImpl.cpp" />

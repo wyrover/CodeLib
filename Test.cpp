@@ -71,11 +71,26 @@ void TestFileMap()
     }
 }
 
+void TestMiniDump()
+{
+    IMiniDump* pMiniDump = (IMiniDump*)CreateInstance(CODELIB_MINIDUMP);
+
+    if(NULL != pMiniDump)
+    {
+        pMiniDump->Active();
+        int* x = 0;
+        *x = 10;
+        delete pMiniDump;
+        pMiniDump = NULL;
+    }
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 //    TestProcess();
 //    TestIniFile();
-    TestFileMap();
+//    TestFileMap();
+    TestMiniDump();
     return 0;
 }
 
