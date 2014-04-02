@@ -1,9 +1,10 @@
 #include "stdafx.h"
-#include "Common.h"
 #include "ProcessImpl.h"
 #include "IniFileImpl.h"
 #include "FileMapImpl.h"
 #include "MiniDumpImpl.h"
+#include "ThreadImpl.h"
+
 namespace CODELIB
 {
     LPVOID CreateInstance(INTERFACE_NAME interfaceName)
@@ -33,6 +34,12 @@ namespace CODELIB
             case CODELIB_MINIDUMP:
             {
                 pInterface = new CODELIB::CMiniDumpImpl;
+                break;
+            }
+
+            case CODELIB_THREAD:
+            {
+                pInterface = new CODELIB::CThreadImpl;
                 break;
             }
 

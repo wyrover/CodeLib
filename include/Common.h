@@ -5,6 +5,7 @@
 #include "IIni.h"
 #include "IFileMap.h"
 #include "IMiniDump.h"
+#include "IThread.h"
 
 namespace CODELIB
 {
@@ -13,7 +14,8 @@ namespace CODELIB
         CODELIB_PROCESS,
         CODELIB_INIFILE,
         CODELIB_FILEMAP,
-        CODELIB_MINIDUMP
+        CODELIB_MINIDUMP,
+        CODELIB_THREAD
     };
 
     LPVOID CreateInstance(INTERFACE_NAME interfaceName);

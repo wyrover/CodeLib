@@ -85,12 +85,26 @@ void TestMiniDump()
     }
 }
 
+void TestThread()
+{
+    IThread* pThread = (IThread*)CreateInstance(CODELIB_THREAD);
+
+    if(NULL != pThread)
+    {
+        pThread->Start();
+        pThread->Stop();
+        delete pThread;
+        pThread = NULL;
+    }
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 //    TestProcess();
 //    TestIniFile();
 //    TestFileMap();
-    TestMiniDump();
+//    TestMiniDump();
+    TestThread();
     return 0;
 }
 
