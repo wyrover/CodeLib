@@ -2,6 +2,7 @@
 #include "Common.h"
 #include "ProcessImpl.h"
 #include "IniFileImpl.h"
+#include "FileMapImpl.h"
 
 namespace CODELIB
 {
@@ -22,6 +23,11 @@ namespace CODELIB
                 pInterface = new CODELIB::CIniFileImpl;
                 break;
             }
+			case CODELIB_FILEMAP:
+				{
+					pInterface=new CODELIB::CFileMapImpl;
+					break;
+				}
 
             default:
                 break;

@@ -82,8 +82,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Common.h" />
+    <ClInclude Include="include\IFileMap.h" />
     <ClInclude Include="include\IIni.h" />
     <ClInclude Include="include\IProcess.h" />
+    <ClInclude Include="src\FileMapImpl.h" />
     <ClInclude Include="src\IniFileImpl.h" />
     <ClInclude Include="src\ProcessImpl.h" />
     <ClInclude Include="stdafx.h" />
@@ -91,6 +93,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Common.cpp" />
+    <ClCompile Include="src\FileMapImpl.cpp" />
     <ClCompile Include="src\IniFileImpl.cpp" />
     <ClCompile Include="src\ProcessImpl.cpp" />
     <ClCompile Include="Test.cpp" />

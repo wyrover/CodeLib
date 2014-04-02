@@ -4,7 +4,6 @@
 #include "stdafx.h"
 #include "Common.h"
 #include <tchar.h>
-#include "IIni.h"
 using  namespace CODELIB;
 
 void TestProcess()
@@ -57,10 +56,26 @@ void TestIniFile()
     pIniFile = NULL;
 }
 
+void TestFileMap()
+{
+    IFileMap* pFileMap = (IFileMap*)CreateInstance(CODELIB_FILEMAP);
+
+    if(NULL != pFileMap)
+    {
+        pFileMap->Create(_T("D:\\Program Files (x86)\\Tencent\\QQ\\QQProtect\\Bin\\QQProtect.exe"));
+        DWORD dwFileSize = pFileMap->GetFileSize();
+        LPVOID lpBuf = pFileMap->GetBuffer();
+        pFileMap->Close();
+        delete pFileMap;
+        pFileMap = NULL;
+    }
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
 //    TestProcess();
-    TestIniFile();
+//    TestIniFile();
+    TestFileMap();
     return 0;
 }
 
