@@ -4,10 +4,12 @@
 #include "FileMapImpl.h"
 #include "MiniDumpImpl.h"
 #include "ThreadImpl.h"
+#include "LPCServerImpl.h"
+#include "LPCClientImpl.h"
 
 namespace CODELIB
 {
-    LPVOID CreateInstance(INTERFACE_NAME interfaceName)
+    LPVOID CreateInstance(INTERFACE_NAME interfaceName,LPVOID lpCreateParam)
     {
         LPVOID pInterface = NULL;
 
@@ -43,6 +45,16 @@ namespace CODELIB
                 break;
             }
 
+			case CODELIB_LPCSERVER:
+				{
+					pInterface=new CODELIB::CLPCServerImpl((ILPCEvent*)lpCreateParam);
+					break;
+				}
+			case CODELIB_LPCCLIENT:
+				{
+					pInterface=new CODELIB::CLPCClientImpl;
+					break;
+				}
             default:
                 break;
         }

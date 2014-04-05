@@ -63,6 +63,15 @@
     <ClInclude Include="src\ThreadImpl.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="include\ILPC.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LPCServerImpl.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LPCClientImpl.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -87,6 +96,12 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\ThreadImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LPCServerImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\LPCClientImpl.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

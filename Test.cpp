@@ -4,7 +4,20 @@
 #include "stdafx.h"
 #include "Common.h"
 #include <tchar.h>
+#include <conio.h>
+#include <xmemory>
 using  namespace CODELIB;
+
+#define _CRTDBG_MAP_ALLOC
+#include <stdlib.h>
+#include <crtdbg.h>
+
+#ifdef _DEBUG
+#ifndef DBG_NEW
+#define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
+#define new DBG_NEW
+#endif
+#endif
 
 void TestProcess()
 {
@@ -98,13 +111,88 @@ void TestThread()
     }
 }
 
+class CLPCEvent: public ILPCEvent
+{
+public:
+    CLPCEvent()
+    {
+
+    }
+
+    virtual ~CLPCEvent()
+    {
+
+    }
+
+    void OnCreate(ILPC* pLPC)
+    {
+
+    }
+
+    void OnClose(ILPC* pLPC)
+    {
+
+    }
+
+    BOOL OnConnect(ILPC* pLPC, ISender* pSender)
+    {
+        return TRUE;
+    }
+
+    void OnDisConnect(ILPC* pLPC, ISender* pSender)
+    {
+
+    }
+
+    void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage)
+    {
+        // 回复应答消息
+        pSender->SendMessage(pMessage);
+        // 广播消息
+        ISenders* pSenders = pLPC->GetSenders();
+
+        for(pSenders->Begin(); !pSenders->End(); pSenders->Next())
+        {
+            ISender* aSender = pSenders->GetCurrent();
+
+            if(NULL != aSender)
+            {
+                if(aSender->GetSID() == 123)
+                    aSender->SendMessage(pMessage);
+                else
+                {
+                    IMessage* aMessage = aSender->AllocMessage();
+                    aMessage->SetBuffer(_T("XXX"), (DWORD)_tcslen(_T("XXX"))*sizeof(TCHAR));
+                    aSender->SendMessage(aMessage);
+                }
+            }
+        }
+    }
+};
+
+void TestLPC()
+{
+    ILPCEvent* pEvent = new CLPCEvent;
+	std::auto_ptr<ILPCEvent> autoEvent(pEvent);
+    std::auto_ptr<ILPC> pServer((ILPC*)CreateInstance(CODELIB_LPCSERVER, pEvent));
+    const TCHAR* sPortName = _T("\\ServerLPC");
+
+    if(pServer->Create(sPortName))
+    {
+        _getch();
+        pServer->Close();
+    }
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 //    TestProcess();
 //    TestIniFile();
 //    TestFileMap();
 //    TestMiniDump();
-    TestThread();
+//    TestThread();
+    TestLPC();
     return 0;
 }
 

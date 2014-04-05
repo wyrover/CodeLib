@@ -29,7 +29,7 @@ namespace CODELIB
 
         if(NULL != pChar)
         {
-            int iPos = pChar - sModuleName;
+            int iPos = int(pChar - sModuleName);
             sModuleName[iPos + 1] = _T('\0');
         }
 
