@@ -4,16 +4,15 @@
 
 namespace CODELIB
 {
-
-
     CLPCServerImpl::CLPCServerImpl(ILPCEvent* pEvent): m_hListenPort(NULL), m_pEvent(pEvent)
     {
-
+        InitializeCriticalSection(&m_mapCS);
     }
 
     CLPCServerImpl::~CLPCServerImpl()
     {
         Close();
+        DeleteCriticalSection(&m_mapCS);
     }
 
     BOOL CLPCServerImpl::Create(LPCTSTR lpPortName)
@@ -46,14 +45,6 @@ namespace CODELIB
             return FALSE;
         }
 
-//         CLPCSender* pSender = new CLPCSender(m_hListenPort, this);
-//
-//         if(NULL == pSender)
-//             return FALSE;
-//
-//         AddSender(m_hListenPort, pSender);
-//         pSender->Connect();
-
         OnCreate(this);
         return TRUE;
     }
@@ -72,6 +63,8 @@ namespace CODELIB
             CloseHandle(m_hListenThread);
             m_hListenThread = NULL;
         }
+
+        ClearSenders();
 
         OnClose(this);
     }
@@ -129,6 +122,7 @@ namespace CODELIB
         threadParam = NULL;
         return dwRet;
     }
+
     DWORD CLPCServerImpl::_ListenThread(HANDLE hPort)
     {
         NTSTATUS            Status = STATUS_UNSUCCESSFUL;
@@ -139,7 +133,7 @@ namespace CODELIB
         for(; ;)
         {
             // 等待接收客户端消息,并回应,此函数会一直挂起,直到接收到数据
-            Status = NtReplyWaitReceivePort(hPort, 0, &ReplyData->Header, &ReceiveData.Header);
+            Status = NtReplyWaitReceivePort(m_hListenPort, 0, &ReplyData->Header, &ReceiveData.Header);
 
             if(!NT_SUCCESS(Status))
             {
@@ -149,51 +143,41 @@ namespace CODELIB
 
             LpcType = ReceiveData.Header.u2.s2.Type;
 
-            // 有客户端连接到来
-            if(LpcType == LPC_CONNECTION_REQUEST)
+            if(LpcType == LPC_CONNECTION_REQUEST)           // 有客户端连接到来
             {
                 HandleConnect(&ReceiveData.Header);
                 ReplyData = NULL;
                 continue;
             }
-
-            // 客户端进程退出
-            if(LpcType == LPC_CLIENT_DIED)
+            else if(LpcType == LPC_CLIENT_DIED)             // 客户端进程退出
             {
                 ReplyData = NULL;
-
-                if(!HandleDisConnect(hPort))
-                    break;
-
+                HandleDisConnect(hPort);
                 continue;
             }
-
-            // 客户端端口关闭
-            if(LpcType == LPC_PORT_CLOSED)
+            else if(LpcType == LPC_PORT_CLOSED)             // 客户端端口关闭
             {
                 ReplyData = NULL;
-
-//                 if(!HandleDisConnect(hPort))
-//                     break;
-//
-//                 continue;
+                HandleDisConnect(hPort);
                 break;
-            }
 
-            // 客户端调用NtRequestWaitReplyPort时触发此消息,表示客户端发来消息,并且要求服务端进行应答
-            if(LpcType == LPC_REQUEST)
+            }
+            else if(LpcType == LPC_REQUEST)     // 客户端调用NtRequestWaitReplyPort时触发此消息,表示客户端发来消息,并且要求服务端进行应答
             {
                 // 根据收到的消息填充应答消息的通信头结构体
                 ReplyData = &ReceiveData;
 //              HandleRequest(hPort, &ReceiveData, ReplyData);
                 continue;
             }
-
-            // 客户端调用NtRequestPort时触发此消息,表示客户端发来消息,无需服务端进行应答
-            if(LpcType == LPC_DATAGRAM)
+            else if(LpcType == LPC_DATAGRAM)        // 客户端调用NtRequestPort时触发此消息,表示客户端发来消息,无需服务端进行应答
             {
                 ReplyData = NULL;
 //              HandleRequest(hPort, &ReceiveData, ReplyData);
+                continue;
+            }
+            else
+            {
+                ReplyData = NULL;
                 continue;
             }
         }
@@ -204,8 +188,8 @@ namespace CODELIB
     BOOL CLPCServerImpl::HandleConnect(PPORT_MESSAGE message)
     {
         // 准备接受客户端连接
-        REMOTE_PORT_VIEW ClientView;
-        PORT_VIEW ServerView;
+//         REMOTE_PORT_VIEW ClientView;
+//         PORT_VIEW ServerView;
         HANDLE hConnect = NULL;
         NTSTATUS ntStatus = NtAcceptConnectPort(&hConnect, NULL, message, TRUE, /*&ServerView*/NULL, /*&ClientView*/NULL);
 
@@ -217,7 +201,7 @@ namespace CODELIB
         if(!NT_SUCCESS(ntStatus))
             return FALSE;
 
-        CLPCSender* pSender = new CLPCSender(m_hListenPort, this);
+        CLPCSender* pSender = new CLPCSender(hConnect, this);
 
         if(NULL == pSender)
             return FALSE;
@@ -229,25 +213,15 @@ namespace CODELIB
 
     BOOL CLPCServerImpl::HandleDisConnect(HANDLE hPort)
     {
-        // 一定要判断是从服务端口退出还是从客户端口退出
-        if(m_hListenPort == hPort)  // 从服务端口退出
-        {
-            // 断开所有客户端
-//            ClearSenders();
-            return TRUE;
-        }
-        else
-        {
-            CLPCSender* pSender = (CLPCSender*)FindSenderByHandle(hPort);
+        CLPCSender* pSender = dynamic_cast<CLPCSender*>(FindSenderByHandle(hPort));
 
-            if(NULL != pSender)
-            {
-                RemoveSender(hPort);
-                pSender->DisConnect(TRUE);
-                delete pSender;
-                pSender = NULL;
-                return FALSE;
-            }
+        if(NULL != pSender)
+        {
+            RemoveSender(hPort);
+            pSender->DisConnect();
+            delete pSender;
+            pSender = NULL;
+            return TRUE;
         }
 
         return FALSE;
@@ -255,7 +229,6 @@ namespace CODELIB
 
     HANDLE CLPCServerImpl::CreateListenThread(HANDLE hPort)
     {
-        // 开启监听线程监听端口连接
         THREAD_PARAM* pParam = new THREAD_PARAM;
         pParam->pServer = this;
         pParam->hPort = hPort;
@@ -264,48 +237,34 @@ namespace CODELIB
 
     void CLPCServerImpl::AddSender(HANDLE hPort, ISender* pSender)
     {
+        EnterCriticalSection(&m_mapCS);
+
         if(NULL != hPort || NULL != pSender)
             m_sendersMap.insert(std::make_pair(hPort, pSender));
+
+        LeaveCriticalSection(&m_mapCS);
     }
 
     void CLPCServerImpl::RemoveSender(HANDLE hPort)
     {
-        SenderMap::const_iterator cit;
-        SenderMap::const_iterator citRemove = m_sendersMap.end();
-
-        for(cit = m_sendersMap.begin(); cit != m_sendersMap.end(); cit++)
-        {
-            CLPCSender* pSender = dynamic_cast<CLPCSender*>(cit->second);
-
-            if((NULL != pSender) && (pSender->GetHandle() == hPort))
-            {
-                citRemove = cit;
-                break;
-            }
-        }
-
-        if(citRemove != m_sendersMap.end())
-            m_sendersMap.erase(citRemove);
+        EnterCriticalSection(&m_mapCS);
+        m_sendersMap.erase(hPort);
+        LeaveCriticalSection(&m_mapCS);
     }
 
     ISender* CLPCServerImpl::FindSenderByHandle(HANDLE hPort)
     {
-        ISenders* pSenders = GetSenders();
+        ISender* pSender = NULL;
+        EnterCriticalSection(&m_mapCS);
 
-        for(pSenders->Begin(); !pSenders->End(); pSenders->Next())
-        {
-            CLPCSender* pSender = dynamic_cast<CLPCSender*>(pSenders->GetCurrent());
+        SenderMap::const_iterator cit = m_sendersMap.find(hPort);
 
-            if((NULL != pSender) && (pSender->GetHandle() == hPort))
-                return pSender;
-        }
+        if(cit != m_sendersMap.end())
+            pSender = cit->second;
 
-        return NULL;
-    }
+        LeaveCriticalSection(&m_mapCS);
 
-    HANDLE CLPCServerImpl::GetListenPort()
-    {
-        return m_hListenPort;
+        return pSender;
     }
 
     void CLPCServerImpl::ClearSenders()
@@ -355,15 +314,12 @@ namespace CODELIB
 
     ISender* CLPCSenders::GetCurrent()
     {
-        if(End())
-            return NULL;
-
-        return (ISender*)m_cit->second;
+        return m_cit->second;
     }
 
     DWORD CLPCSenders::GetSize()
     {
-        return m_senderMap.size();
+        return (DWORD)m_senderMap.size();
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -409,38 +365,24 @@ namespace CODELIB
 
         m_pServer->OnConnect(m_pServer, this);
 
-//      WaitForSingleObject(m_hListenThread,INFINITE);
         return (NULL != m_hListenThread);
     }
 
-    void CLPCSender::DisConnect(BOOL bSelfExit)
+    void CLPCSender::DisConnect()
     {
         if(NULL != m_hListenThread)
         {
-            if(!bSelfExit)  // 从服务端口退出
-            {
-                // 此时,如果接收线程正在等待消息的话,会处于挂起状态,无法结束,所以可以强制结束线程
-                if(WAIT_OBJECT_0 != WaitForSingleObject(m_hListenThread, 100))
-                    TerminateThread(m_hListenThread, 0);
-            }
-
             CloseHandle(m_hListenThread);
             m_hListenThread = NULL;
         }
 
-        if(NULL != m_hPort)
-        {
-            NtClose(m_hPort);
-            m_hPort = NULL;
-        }
+//         if(NULL != m_hPort)
+//         {
+//             NtClose(m_hPort);
+//             m_hPort = NULL;
+//         }
 
         if(NULL != m_pServer)
             m_pServer->OnDisConnect(m_pServer, this);
     }
-
-    HANDLE CLPCSender::GetHandle()
-    {
-        return m_hPort;
-    }
-
 }

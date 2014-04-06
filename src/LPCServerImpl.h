@@ -13,10 +13,13 @@ namespace CODELIB
         HANDLE hPort;
     };
     //////////////////////////////////////////////////////////////////////////
+    class CLPCSender;
     class CLPCServerImpl : public ILPC, public ILPCEvent
     {
     public:
+
         CLPCServerImpl(ILPCEvent* pEvent);
+
         virtual ~CLPCServerImpl();
 
         // ILPC
@@ -37,19 +40,19 @@ namespace CODELIB
 
         virtual void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage);
 
+        // UserDefine
         void AddSender(HANDLE hPort, ISender* pSender);
 
         void RemoveSender(HANDLE hPort);
 
         ISender* FindSenderByHandle(HANDLE hPort);
 
-		void ClearSenders();
+        HANDLE CreateListenThread(HANDLE hPort);
 
-		HANDLE CreateListenThread(HANDLE hPort);
-
-		HANDLE GetListenPort();
     protected:
-        
+
+        void ClearSenders();
+
         static DWORD __stdcall _ListenThreadProc(LPVOID lpParam);
 
         DWORD _ListenThread(HANDLE hPort);
@@ -57,22 +60,30 @@ namespace CODELIB
         BOOL HandleConnect(PPORT_MESSAGE message);
 
         BOOL HandleDisConnect(HANDLE hPort);
+
     private:
+
         SenderMap m_sendersMap; // 连接端映射
+
         ILPCEvent* m_pEvent;    // 事件接受者
+
         HANDLE m_hListenPort;   // LPC监听端口
+
         HANDLE m_hListenThread; // 监听线程句柄
+
+        CRITICAL_SECTION m_mapCS;
     };
 
     class CLPCSender: public ISender
     {
     public:
-        CLPCSender(HANDLE hPort,CLPCServerImpl* pServer);
+        CLPCSender(HANDLE hPort, CLPCServerImpl* pServer);
+
         virtual ~CLPCSender();
 
         BOOL Connect();
 
-		void DisConnect(BOOL bSelfExit=FALSE);
+        void DisConnect();
 
         virtual DWORD GetSID();
 
@@ -82,11 +93,13 @@ namespace CODELIB
 
         virtual BOOL SendMessage(IMessage* pMessage);
 
-		HANDLE GetHandle();
     private:
-		HANDLE m_hListenThread;
+
+        HANDLE m_hListenThread;
+
         HANDLE m_hPort;
-		CLPCServerImpl* m_pServer;
+
+        CLPCServerImpl* m_pServer;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -94,6 +107,7 @@ namespace CODELIB
     {
     public:
         CLPCSenders(SenderMap senderMap);
+
         virtual ~CLPCSenders();
 
         virtual void Begin();
@@ -105,8 +119,11 @@ namespace CODELIB
         virtual ISender* GetCurrent();
 
         virtual DWORD GetSize();
+
     private:
+
         SenderMap::const_iterator m_cit;
+
         SenderMap m_senderMap;
     };
 
