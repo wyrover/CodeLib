@@ -146,6 +146,8 @@ public:
 
     void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage)
     {
+        DWORD dwBufSize = 0;
+        _tprintf_s(_T("%s"), (char*)pMessage->GetBuffer(dwBufSize));
         // 回复应答消息
         pSender->SendMessage(pMessage);
         // 广播消息
@@ -161,9 +163,11 @@ public:
                     aSender->SendMessage(pMessage);
                 else
                 {
-                    IMessage* aMessage = aSender->AllocMessage();
-                    aMessage->SetBuffer(_T("XXX"), (DWORD)_tcslen(_T("XXX"))*sizeof(TCHAR));
-                    aSender->SendMessage(aMessage);
+//                     IMessage* aMessage = NULL;
+//                     aSender->AllocMessage(aMessage);
+//                     aMessage->SetBuffer(_T("XXX"), (DWORD)_tcslen(_T("XXX"))*sizeof(TCHAR));
+//                     aSender->SendMessage(aMessage);
+//                     aSender->FreeMessage(aMessage);
                 }
             }
         }
@@ -173,7 +177,7 @@ public:
 void TestLPC()
 {
     ILPCEvent* pEvent = new CLPCEvent;
-	std::auto_ptr<ILPCEvent> autoEvent(pEvent);
+    std::auto_ptr<ILPCEvent> autoEvent(pEvent);
     std::auto_ptr<ILPC> pServer((ILPC*)CreateInstance(CODELIB_LPCSERVER, pEvent));
     const TCHAR* sPortName = _T("\\ServerLPC");
 

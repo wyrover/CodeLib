@@ -3,6 +3,8 @@
 
 namespace CODELIB
 {
+
+
     enum MESSAGE_TYPE
     {
 
@@ -14,27 +16,17 @@ namespace CODELIB
         virtual ~IMessage() = 0 {};
         virtual MESSAGE_TYPE GetMessageType() = 0;
         virtual LPVOID GetBuffer(DWORD& dwBufferSize) = 0;
-        virtual void SetMessageType() = 0;
+        virtual void SetMessageType(MESSAGE_TYPE messageType) = 0;
         virtual void SetBuffer(LPVOID lpBuf, DWORD dwBufSize) = 0;
     };
-
-    typedef struct _TRANSFERRED_DATA
-    {
-        _TRANSFERRED_DATA()
-        {
-            InitializeMessageHeader(&Header, sizeof(_TRANSFERRED_DATA), 0);
-        }
-        PORT_MESSAGE            Header;
-        IMessage* pMessage;
-    } TRANSFERRED_DATA, *PTRANSFERRED_DATA;
 
     class ISender
     {
     public:
         virtual ~ISender() = 0 {};
-        virtual DWORD GetSID() = 0;
-        virtual IMessage* AllocMessage() = 0;
+        virtual BOOL AllocMessage(IMessage* pMessage) = 0;
         virtual void FreeMessage(IMessage* pMessage) = 0;
+        virtual DWORD GetSID() = 0;
         virtual BOOL SendMessage(IMessage* pMessage) = 0;
     };
 
