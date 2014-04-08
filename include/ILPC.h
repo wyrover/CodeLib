@@ -13,7 +13,7 @@ namespace CODELIB
     {
     public:
         virtual ~IMessage() = 0 {};
-		virtual PPORT_MESSAGE GetHeader()=0;
+        virtual PPORT_MESSAGE GetHeader() = 0;
         virtual MESSAGE_TYPE GetMessageType() = 0;
         virtual LPVOID GetBuffer(DWORD& dwBufferSize) = 0;
         virtual void SetMessageType(MESSAGE_TYPE msgType) = 0;
@@ -25,17 +25,8 @@ namespace CODELIB
     public:
         virtual ~ISender() = 0 {};
         virtual DWORD GetSID() = 0;
-    };
-
-    class ISenders
-    {
-    public:
-        virtual ~ISenders() = 0 {};
-        virtual void Begin() = 0;
-        virtual BOOL End() = 0;
-        virtual void Next() = 0;
-        virtual ISender* GetCurrent() = 0;
-        virtual DWORD GetSize() = 0;
+        virtual BOOL SendMessage(IMessage* pMessage) = 0;
+        virtual BOOL PostMessage(IMessage* pMessage) = 0;
     };
 
     class ILPC
@@ -44,7 +35,6 @@ namespace CODELIB
         virtual ~ILPC() = 0 {};
         virtual BOOL Create(LPCTSTR lpPortName) = 0;
         virtual void Close() = 0;
-        virtual ISenders* GetSenders() = 0;
     };
 
     class ILPCEvent
@@ -56,6 +46,6 @@ namespace CODELIB
         virtual BOOL OnConnect(ILPC* pLPC, ISender* pSender) = 0;
         virtual void OnDisConnect(ILPC* pLPC, ISender* pSender) = 0;
         virtual void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage) = 0;
-		virtual void OnRecvAndSend(ILPC* pLPC,ISender* pSender,IMessage* pReceiveMsg,IMessage* pReplyMsg)=0;
+        virtual void OnRecvAndReply(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg) = 0;
     };
 }

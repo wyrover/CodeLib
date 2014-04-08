@@ -52,7 +52,7 @@ namespace CODELIB
 				}
 			case CODELIB_LPCCLIENT:
 				{
-					pInterface=new CODELIB::CLPCClientImpl;
+					pInterface=new CODELIB::CLPCClientImpl((ILPCEvent*)lpCreateParam);
 					break;
 				}
             default:

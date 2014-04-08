@@ -69,12 +69,6 @@ namespace CODELIB
         OnClose(this);
     }
 
-    ISenders* CLPCServerImpl::GetSenders()
-    {
-        static CLPCSenders senders(m_sendersMap);
-        return &senders;
-    }
-
     void CLPCServerImpl::OnCreate(ILPC* pLPC)
     {
         if(NULL != m_pEvent)
@@ -191,6 +185,8 @@ namespace CODELIB
 
         AddSender(hConnect, pSender);
 
+        OnConnect(this, pSender);
+
         return TRUE;
     }
 
@@ -202,6 +198,7 @@ namespace CODELIB
         {
             RemoveSender(hPort);
             pSender->DisConnect();
+            OnDisConnect(this, pSender);
             delete pSender;
             pSender = NULL;
             return TRUE;
@@ -284,51 +281,15 @@ namespace CODELIB
         CLPCSender* pSender = dynamic_cast<CLPCSender*>(FindSenderByHandle(hPort));
 
         if(NULL != pSender)
-            OnRecvAndSend(this, pSender, receiveMsg, replyMsg);
+            OnRecvAndReply(this, pSender, receiveMsg, replyMsg);
 
         return TRUE;
     }
 
-    void CLPCServerImpl::OnRecvAndSend(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg)
+    void CLPCServerImpl::OnRecvAndReply(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg)
     {
         if(NULL != m_pEvent)
-            m_pEvent->OnRecvAndSend(pLPC, pSender, pReceiveMsg, pReplyMsg);
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    CLPCSenders::CLPCSenders(SenderMap senderMap): m_senderMap(senderMap)
-    {
-        m_cit = m_senderMap.begin();
-    }
-
-    CLPCSenders::~CLPCSenders()
-    {
-        m_cit = m_senderMap.end();
-    }
-
-    void CLPCSenders::Begin()
-    {
-        m_cit = m_senderMap.begin();
-    }
-
-    BOOL CLPCSenders::End()
-    {
-        return (m_cit == m_senderMap.end());
-    }
-
-    void CLPCSenders::Next()
-    {
-        m_cit++;
-    }
-
-    ISender* CLPCSenders::GetCurrent()
-    {
-        return m_cit->second;
-    }
-
-    DWORD CLPCSenders::GetSize()
-    {
-        return (DWORD)m_senderMap.size();
+            m_pEvent->OnRecvAndReply(pLPC, pSender, pReceiveMsg, pReplyMsg);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -337,9 +298,9 @@ namespace CODELIB
         return m_dwPID;
     }
 
-    CLPCSender::CLPCSender(HANDLE hPort, DWORD dwPID, CLPCServerImpl * pServer): m_hPort(hPort)
+    CLPCSender::CLPCSender(HANDLE hPort, DWORD dwPID, ILPCEvent * pEvent): m_hPort(hPort)
         , m_dwPID(dwPID)
-        , m_pServer(pServer)
+        , m_pEvent(pEvent)
     {
 
     }
@@ -356,9 +317,20 @@ namespace CODELIB
             NtClose(m_hPort);
             m_hPort = NULL;
         }
+    }
 
-        if(NULL != m_pServer)
-            m_pServer->OnDisConnect(m_pServer, this);
+    BOOL CLPCSender::SendMessage(IMessage* pMessage)
+    {
+        return FALSE;
+    }
+
+    BOOL CLPCSender::PostMessage(IMessage* pMessage)
+    {
+        if(NULL == m_hPort)
+            return FALSE;
+
+        NTSTATUS ntStatus = NtReplyPort(m_hPort, pMessage->GetHeader());
+        return NT_SUCCESS(ntStatus);
     }
 
     //////////////////////////////////////////////////////////////////////////

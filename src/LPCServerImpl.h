@@ -27,8 +27,6 @@ namespace CODELIB
 
         virtual void Close();
 
-        virtual ISenders* GetSenders();
-
         // ILPCEvent
         virtual void OnCreate(ILPC* pLPC);
 
@@ -40,7 +38,7 @@ namespace CODELIB
 
         virtual void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage);
 
-        virtual void OnRecvAndSend(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg);
+        virtual void OnRecvAndReply(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg);
 
         // UserDefine
         void AddSender(HANDLE hPort, ISender* pSender);
@@ -83,7 +81,7 @@ namespace CODELIB
     class CLPCSender: public ISender
     {
     public:
-        CLPCSender(HANDLE hPort, DWORD dwPID,CLPCServerImpl* pServer);
+        CLPCSender(HANDLE hPort, DWORD dwPID, ILPCEvent* pServer);
 
         virtual ~CLPCSender();
 
@@ -91,38 +89,17 @@ namespace CODELIB
 
         virtual DWORD GetSID();
 
+        virtual BOOL SendMessage(IMessage* pMessage);
+
+        virtual BOOL PostMessage(IMessage* pMessage);
+
     private:
 
         HANDLE m_hPort;
 
-        CLPCServerImpl* m_pServer;
+        ILPCEvent* m_pEvent;
 
-		DWORD m_dwPID;
-    };
-
-    //////////////////////////////////////////////////////////////////////////
-    class CLPCSenders : public ISenders
-    {
-    public:
-        CLPCSenders(SenderMap senderMap);
-
-        virtual ~CLPCSenders();
-
-        virtual void Begin();
-
-        virtual BOOL End();
-
-        virtual void Next();
-
-        virtual ISender* GetCurrent();
-
-        virtual DWORD GetSize();
-
-    private:
-
-        SenderMap::const_iterator m_cit;
-
-        SenderMap m_senderMap;
+        DWORD m_dwPID;
     };
 
     class CLPCMessage: public IMessage

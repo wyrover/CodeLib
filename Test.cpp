@@ -137,15 +137,18 @@ public:
 
     BOOL OnConnect(ILPC* pLPC, ISender* pSender)
     {
+        _tsetlocale(LC_ALL, _T("chs"));
+        _tprintf_s(_T("客户端 %u 连接到服务器\r\n"), pSender->GetSID());
         return TRUE;
     }
 
     void OnDisConnect(ILPC* pLPC, ISender* pSender)
     {
-
+        _tsetlocale(LC_ALL, _T("chs"));
+        _tprintf_s(_T("客户端 %u 从服务器断开\r\n"), pSender->GetSID());
     }
 
-    void OnRecvAndSend(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg)
+    void OnRecvAndReply(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg)
     {
         if(NULL != pReceiveMsg)
         {
