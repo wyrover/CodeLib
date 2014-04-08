@@ -11,6 +11,7 @@ using  namespace CODELIB;
 #define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
 #include <crtdbg.h>
+#include <locale.h>
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -144,33 +145,31 @@ public:
 
     }
 
+    void OnRecvAndSend(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg)
+    {
+        if(NULL != pReceiveMsg)
+        {
+            DWORD dwBufSize = 0;
+            _tsetlocale(LC_ALL, _T("chs"));
+            _tprintf_s(_T("%s"), pReceiveMsg->GetBuffer(dwBufSize));
+        }
+
+        if(pReceiveMsg->GetMessageType() == 1)
+        {
+            if(NULL != pReplyMsg)
+            {
+                TCHAR sRequest[256] = {0};
+                _stprintf_s(sRequest, _T("客户端你好,我是服务端 %u"), GetCurrentProcessId());
+                pReplyMsg->SetBuffer((LPVOID)sRequest, (DWORD)_tcslen(sRequest)*sizeof(TCHAR));
+            }
+        }
+    }
+
     void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage)
     {
         DWORD dwBufSize = 0;
-        _tprintf_s(_T("%s"), (char*)pMessage->GetBuffer(dwBufSize));
-        // 回复应答消息
-        pSender->SendMessage(pMessage);
-        // 广播消息
-        ISenders* pSenders = pLPC->GetSenders();
-
-        for(pSenders->Begin(); !pSenders->End(); pSenders->Next())
-        {
-            ISender* aSender = pSenders->GetCurrent();
-
-            if(NULL != aSender)
-            {
-                if(aSender->GetSID() == 123)
-                    aSender->SendMessage(pMessage);
-                else
-                {
-//                     IMessage* aMessage = NULL;
-//                     aSender->AllocMessage(aMessage);
-//                     aMessage->SetBuffer(_T("XXX"), (DWORD)_tcslen(_T("XXX"))*sizeof(TCHAR));
-//                     aSender->SendMessage(aMessage);
-//                     aSender->FreeMessage(aMessage);
-                }
-            }
-        }
+        _tsetlocale(LC_ALL, _T("chs"));
+        _tprintf_s(_T("%s"), pMessage->GetBuffer(dwBufSize));
     }
 };
 
@@ -179,6 +178,20 @@ void TestLPC()
     ILPCEvent* pEvent = new CLPCEvent;
     std::auto_ptr<ILPCEvent> autoEvent(pEvent);
     std::auto_ptr<ILPC> pServer((ILPC*)CreateInstance(CODELIB_LPCSERVER, pEvent));
+    const TCHAR* sPortName = _T("\\ServerLPC");
+
+    if(pServer->Create(sPortName))
+    {
+        _getch();
+        pServer->Close();
+    }
+}
+
+void TestPLCClient()
+{
+    ILPCEvent* pEvent = new CLPCEvent;
+    std::auto_ptr<ILPCEvent> autoEvent(pEvent);
+    std::auto_ptr<ILPC> pServer((ILPC*)CreateInstance(CODELIB_LPCCLIENT, pEvent));
     const TCHAR* sPortName = _T("\\ServerLPC");
 
     if(pServer->Create(sPortName))

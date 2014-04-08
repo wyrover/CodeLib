@@ -40,6 +40,8 @@ namespace CODELIB
 
         virtual void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage);
 
+        virtual void OnRecvAndSend(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg);
+
         // UserDefine
         void AddSender(HANDLE hPort, ISender* pSender);
 
@@ -55,11 +57,15 @@ namespace CODELIB
 
         static DWORD __stdcall _ListenThreadProc(LPVOID lpParam);
 
-        DWORD _ListenThread(HANDLE hPort);
+        DWORD _ListenThread();
 
         BOOL HandleConnect(PPORT_MESSAGE message);
 
         BOOL HandleDisConnect(HANDLE hPort);
+
+        BOOL HandleDataGram(HANDLE hPort, IMessage* message);
+
+        BOOL HandleRequest(HANDLE hPort, IMessage* receiveMsg, IMessage* replyMsg);
 
     private:
 
@@ -77,29 +83,21 @@ namespace CODELIB
     class CLPCSender: public ISender
     {
     public:
-        CLPCSender(HANDLE hPort, CLPCServerImpl* pServer);
+        CLPCSender(HANDLE hPort, DWORD dwPID,CLPCServerImpl* pServer);
 
         virtual ~CLPCSender();
-
-        BOOL Connect();
 
         void DisConnect();
 
         virtual DWORD GetSID();
 
-        virtual IMessage* AllocMessage();
-
-        virtual void FreeMessage(IMessage* pMessage);
-
-        virtual BOOL SendMessage(IMessage* pMessage);
-
     private:
-
-        HANDLE m_hListenThread;
 
         HANDLE m_hPort;
 
         CLPCServerImpl* m_pServer;
+
+		DWORD m_dwPID;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -131,6 +129,7 @@ namespace CODELIB
     {
     public:
         CLPCMessage();
+
         virtual ~CLPCMessage();
 
         virtual MESSAGE_TYPE GetMessageType();
@@ -141,12 +140,15 @@ namespace CODELIB
 
         virtual void SetBuffer(LPVOID lpBuf, DWORD dwBufSize);
 
-        PPORT_MESSAGE GetPortHeader();
+        PPORT_MESSAGE GetHeader();
 
     private:
         PORT_MESSAGE m_portHeader;
-        LPVOID m_lpFixBuf[MAX_LPC_DATA];
+
+        BYTE m_lpFixBuf[256];
+
         DWORD m_dwBufSize;
+
         MESSAGE_TYPE m_msgType;
     };
 

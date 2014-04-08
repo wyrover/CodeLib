@@ -37,7 +37,7 @@ namespace CODELIB
             return FALSE;
 
         // 开启监听线程监听端口连接
-        m_hListenThread = CreateListenThread(m_hListenPort);
+        m_hListenThread = CreateThread(NULL, 0, _ListenThreadProc, this, 0, NULL);
 
         if(NULL == m_hListenThread)
         {
@@ -109,31 +109,26 @@ namespace CODELIB
 
     DWORD CLPCServerImpl::_ListenThreadProc(LPVOID lpParam)
     {
-        THREAD_PARAM* threadParam = (THREAD_PARAM*)lpParam;
+        CLPCServerImpl* pThis = (CLPCServerImpl*)lpParam;
 
-        if(NULL == threadParam)
+        if(NULL == pThis)
             return -1;
 
-        CLPCServerImpl* pThis = (CLPCServerImpl*)threadParam->pServer;
-        HANDLE hPort = threadParam->hPort;
-        DWORD dwRet = pThis->_ListenThread(hPort);
-
-        delete threadParam;
-        threadParam = NULL;
-        return dwRet;
+        return pThis->_ListenThread();
     }
 
-    DWORD CLPCServerImpl::_ListenThread(HANDLE hPort)
+    DWORD CLPCServerImpl::_ListenThread()
     {
         NTSTATUS            Status = STATUS_UNSUCCESSFUL;
         CLPCMessage recevieMsg;
         CLPCMessage* replyMsg = NULL;
         DWORD               LpcType = 0;
+        PVOID PortContext;
 
         for(; ;)
         {
             // 等待接收客户端消息,并回应,此函数会一直挂起,直到接收到数据
-            Status = NtReplyWaitReceivePort(m_hListenPort, 0, (NULL == replyMsg ? NULL : replyMsg->GetPortHeader()), recevieMsg.GetPortHeader());
+            Status = NtReplyWaitReceivePort(m_hListenPort, &PortContext, (NULL == replyMsg ? NULL : replyMsg->GetHeader()), recevieMsg.GetHeader());
 
             if(!NT_SUCCESS(Status))
             {
@@ -141,42 +136,30 @@ namespace CODELIB
                 break;
             }
 
-            LpcType = recevieMsg.GetPortHeader()->u2.s2.Type;
+            LpcType = recevieMsg.GetHeader()->u2.s2.Type;
 
             if(LpcType == LPC_CONNECTION_REQUEST)           // 有客户端连接到来
             {
-                HandleConnect(recevieMsg.GetPortHeader());
+                HandleConnect(recevieMsg.GetHeader());
                 replyMsg = NULL;
                 continue;
             }
-            else if(LpcType == LPC_CLIENT_DIED)             // 客户端进程退出
+            else if((LpcType == LPC_CLIENT_DIED) || (LpcType == LPC_PORT_CLOSED))             // 客户端进程退出
             {
                 replyMsg = NULL;
-                HandleDisConnect(hPort);
+                HandleDisConnect((HANDLE)PortContext);
                 continue;
-            }
-            else if(LpcType == LPC_PORT_CLOSED)             // 客户端端口关闭
-            {
-                replyMsg = NULL;
-                HandleDisConnect(hPort);
-                break;
-
             }
             else if(LpcType == LPC_REQUEST)     // 客户端调用NtRequestWaitReplyPort时触发此消息,表示客户端发来消息,并且要求服务端进行应答
             {
                 // 根据收到的消息填充应答消息的通信头结构体
                 replyMsg = &recevieMsg;
-//              HandleRequest(hPort, &ReceiveData, ReplyData);
+                HandleRequest(HANDLE(PortContext), &recevieMsg, replyMsg);
                 continue;
             }
             else if(LpcType == LPC_DATAGRAM)        // 客户端调用NtRequestPort时触发此消息,表示客户端发来消息,无需服务端进行应答
             {
-                replyMsg = NULL;
-//              HandleRequest(hPort, &ReceiveData, ReplyData);
-                continue;
-            }
-            else
-            {
+                HandleDataGram(HANDLE(PortContext), &recevieMsg);
                 replyMsg = NULL;
                 continue;
             }
@@ -201,14 +184,14 @@ namespace CODELIB
         if(!NT_SUCCESS(ntStatus))
             return FALSE;
 
-        CLPCSender* pSender = new CLPCSender(hConnect, this);
+        CLPCSender* pSender = new CLPCSender(hConnect, (DWORD)message->ClientId.UniqueProcess, this);
 
         if(NULL == pSender)
             return FALSE;
 
         AddSender(hConnect, pSender);
 
-        return pSender->Connect();
+        return TRUE;
     }
 
     BOOL CLPCServerImpl::HandleDisConnect(HANDLE hPort)
@@ -235,7 +218,7 @@ namespace CODELIB
         return CreateThread(NULL, 0, _ListenThreadProc, pParam, 0, NULL);
     }
 
-    void CLPCServerImpl::AddSender(HANDLE hPort, ISender* pSender)
+    void CLPCServerImpl::AddSender(HANDLE hPort, ISender * pSender)
     {
         EnterCriticalSection(&m_mapCS);
 
@@ -286,6 +269,32 @@ namespace CODELIB
         m_sendersMap.clear();
     }
 
+    BOOL CLPCServerImpl::HandleDataGram(HANDLE hPort, IMessage* message)
+    {
+        CLPCSender* pSender = dynamic_cast<CLPCSender*>(FindSenderByHandle(hPort));
+
+        if(NULL != pSender)
+            OnRecv(this, pSender, message);
+
+        return TRUE;
+    }
+
+    BOOL CLPCServerImpl::HandleRequest(HANDLE hPort, IMessage* receiveMsg, IMessage* replyMsg)
+    {
+        CLPCSender* pSender = dynamic_cast<CLPCSender*>(FindSenderByHandle(hPort));
+
+        if(NULL != pSender)
+            OnRecvAndSend(this, pSender, receiveMsg, replyMsg);
+
+        return TRUE;
+    }
+
+    void CLPCServerImpl::OnRecvAndSend(ILPC* pLPC, ISender* pSender, IMessage* pReceiveMsg, IMessage* pReplyMsg)
+    {
+        if(NULL != m_pEvent)
+            m_pEvent->OnRecvAndSend(pLPC, pSender, pReceiveMsg, pReplyMsg);
+    }
+
     //////////////////////////////////////////////////////////////////////////
     CLPCSenders::CLPCSenders(SenderMap senderMap): m_senderMap(senderMap)
     {
@@ -325,27 +334,12 @@ namespace CODELIB
     //////////////////////////////////////////////////////////////////////////
     DWORD CLPCSender::GetSID()
     {
-        return 0;
+        return m_dwPID;
     }
 
-    IMessage* CLPCSender::AllocMessage()
-    {
-        return NULL;
-    }
-
-    void CLPCSender::FreeMessage(IMessage* pMessage)
-    {
-
-    }
-
-    BOOL CLPCSender::SendMessage(IMessage* pMessage)
-    {
-        return FALSE;
-    }
-
-    CLPCSender::CLPCSender(HANDLE hPort, CLPCServerImpl* pServer): m_hPort(hPort)
+    CLPCSender::CLPCSender(HANDLE hPort, DWORD dwPID, CLPCServerImpl * pServer): m_hPort(hPort)
+        , m_dwPID(dwPID)
         , m_pServer(pServer)
-        , m_hListenThread(NULL)
     {
 
     }
@@ -355,55 +349,36 @@ namespace CODELIB
 
     }
 
-    BOOL CLPCSender::Connect()
-    {
-        if(NULL == m_pServer)
-            return FALSE;
-
-        if(NULL == m_hListenThread)
-            m_hListenThread = m_pServer->CreateListenThread(m_hPort);
-
-        m_pServer->OnConnect(m_pServer, this);
-
-        return (NULL != m_hListenThread);
-    }
-
     void CLPCSender::DisConnect()
     {
-        if(NULL != m_hListenThread)
+        if(NULL != m_hPort)
         {
-            CloseHandle(m_hListenThread);
-            m_hListenThread = NULL;
+            NtClose(m_hPort);
+            m_hPort = NULL;
         }
-
-//         if(NULL != m_hPort)
-//         {
-//             NtClose(m_hPort);
-//             m_hPort = NULL;
-//         }
 
         if(NULL != m_pServer)
             m_pServer->OnDisConnect(m_pServer, this);
     }
 
-	//////////////////////////////////////////////////////////////////////////
-	CLPCMessage::CLPCMessage(): m_dwBufSize(0)
-	{
-		InitializeMessageHeader(&m_portHeader, sizeof(CLPCMessage), 0);
-		ZeroMemory(m_lpFixBuf, MAX_LPC_DATA);
-	}
+    //////////////////////////////////////////////////////////////////////////
+    CLPCMessage::CLPCMessage(): m_dwBufSize(0)
+    {
+        InitializeMessageHeader(&m_portHeader, sizeof(CLPCMessage), 0);
+        ZeroMemory(m_lpFixBuf, MAX_LPC_DATA);
+    }
 
-	CLPCMessage::~CLPCMessage()
-	{
+    CLPCMessage::~CLPCMessage()
+    {
 
-	}
+    }
 
     MESSAGE_TYPE CLPCMessage::GetMessageType()
     {
         return m_msgType;
     }
 
-    LPVOID CLPCMessage::GetBuffer(DWORD& dwBufferSize)
+    LPVOID CLPCMessage::GetBuffer(DWORD & dwBufferSize)
     {
         LPVOID lpBuf = m_lpFixBuf;
         dwBufferSize = m_dwBufSize;
@@ -424,7 +399,7 @@ namespace CODELIB
         }
     }
 
-    PPORT_MESSAGE CLPCMessage::GetPortHeader()
+    PPORT_MESSAGE CLPCMessage::GetHeader()
     {
         return &m_portHeader;
     }
