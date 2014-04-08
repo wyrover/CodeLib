@@ -6,44 +6,6 @@
 namespace CODELIB
 {
     typedef std::map<HANDLE, ISender*> SenderMap;
-    static const int FIXEDBUFLEN = 256;
-
-    class CLPCMessage : public IMessage
-    {
-    public:
-
-        CLPCMessage();
-
-        virtual ~CLPCMessage();
-
-        virtual MESSAGE_TYPE GetMessageType();
-
-        virtual LPVOID GetBuffer(DWORD& dwBufferSize);
-
-        virtual void SetMessageType(MESSAGE_TYPE messageType);
-
-        virtual void SetBuffer(LPVOID lpBuf, DWORD dwBufSize);
-
-        PPORT_MESSAGE GetHeader();
-
-        void SetHeader(PORT_MESSAGE lpcHeader);
-
-    protected:
-
-        BOOL IsUseSectionView();
-
-    private:
-
-        PORT_MESSAGE m_LpcHeader;
-
-        BYTE m_lpFixedBuf[FIXEDBUFLEN];
-
-        DWORD m_dwBufSize;
-
-        MESSAGE_TYPE m_messageType;
-
-        BOOL m_bUseSectionView;
-    };
 
     struct THREAD_PARAM
     {
@@ -79,9 +41,6 @@ namespace CODELIB
         virtual void OnRecv(ILPC* pLPC, ISender* pSender, IMessage* pMessage);
 
         // UserDefine
-
-        CLPCSender* AddSender(HANDLE hPort);
-
         void AddSender(HANDLE hPort, ISender* pSender);
 
         void RemoveSender(HANDLE hPort);
@@ -89,8 +48,6 @@ namespace CODELIB
         ISender* FindSenderByHandle(HANDLE hPort);
 
         HANDLE CreateListenThread(HANDLE hPort);
-
-        HANDLE GetListenPortHandle();
 
     protected:
 
@@ -100,11 +57,9 @@ namespace CODELIB
 
         DWORD _ListenThread(HANDLE hPort);
 
-        BOOL HandleConnect(CLPCMessage* connectInfo);
+        BOOL HandleConnect(PPORT_MESSAGE message);
 
         BOOL HandleDisConnect(HANDLE hPort);
-
-        BOOL HandleRequest(HANDLE hPort, CLPCMessage* recevieData, CLPCMessage* replyData);
 
     private:
 
@@ -112,31 +67,31 @@ namespace CODELIB
 
         ILPCEvent* m_pEvent;    // 事件接受者
 
+        HANDLE m_hListenPort;   // LPC监听端口
+
+        HANDLE m_hListenThread; // 监听线程句柄
+
         CRITICAL_SECTION m_mapCS;
-
-        HANDLE m_hListenPort;
-
-        HANDLE m_hListenThread;
     };
 
     class CLPCSender: public ISender
     {
     public:
-        CLPCSender(HANDLE hPort);
+        CLPCSender(HANDLE hPort, CLPCServerImpl* pServer);
 
         virtual ~CLPCSender();
 
-        BOOL Connect(CLPCServerImpl* pServer);
+        BOOL Connect();
 
-        void DisConnect(CLPCServerImpl* pServer);
+        void DisConnect();
 
         virtual DWORD GetSID();
 
-        virtual BOOL SendMessage(IMessage* pMessage);
-
-        virtual BOOL AllocMessage(IMessage* pMessage);
+        virtual IMessage* AllocMessage();
 
         virtual void FreeMessage(IMessage* pMessage);
+
+        virtual BOOL SendMessage(IMessage* pMessage);
 
     private:
 
@@ -144,6 +99,7 @@ namespace CODELIB
 
         HANDLE m_hPort;
 
+        CLPCServerImpl* m_pServer;
     };
 
     //////////////////////////////////////////////////////////////////////////
@@ -171,8 +127,27 @@ namespace CODELIB
         SenderMap m_senderMap;
     };
 
+    class CLPCMessage: public IMessage
+    {
+    public:
+        CLPCMessage();
+        virtual ~CLPCMessage();
 
+        virtual MESSAGE_TYPE GetMessageType();
 
+        virtual LPVOID GetBuffer(DWORD& dwBufferSize);
 
+        virtual void SetMessageType(MESSAGE_TYPE msgType);
+
+        virtual void SetBuffer(LPVOID lpBuf, DWORD dwBufSize);
+
+        PPORT_MESSAGE GetPortHeader();
+
+    private:
+        PORT_MESSAGE m_portHeader;
+        LPVOID m_lpFixBuf[MAX_LPC_DATA];
+        DWORD m_dwBufSize;
+        MESSAGE_TYPE m_msgType;
+    };
 
 }

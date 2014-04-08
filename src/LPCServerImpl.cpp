@@ -4,7 +4,7 @@
 
 namespace CODELIB
 {
-    CLPCServerImpl::CLPCServerImpl(ILPCEvent* pEvent): m_pEvent(pEvent), m_hListenPort(NULL), m_hListenThread(NULL)
+    CLPCServerImpl::CLPCServerImpl(ILPCEvent* pEvent): m_hListenPort(NULL), m_pEvent(pEvent)
     {
         InitializeCriticalSection(&m_mapCS);
     }
@@ -31,12 +31,12 @@ namespace CODELIB
 
         RtlInitUnicodeString(&PortName, lpPortName);
         InitializeObjectAttributes(&ObjAttr, &PortName, 0, NULL, &sd);
-
         Status = NtCreatePort(&m_hListenPort, &ObjAttr, NULL, sizeof(PORT_MESSAGE) + MAX_LPC_DATA, 0);
 
         if(!NT_SUCCESS(Status))
             return FALSE;
 
+        // 开启监听线程监听端口连接
         m_hListenThread = CreateListenThread(m_hListenPort);
 
         if(NULL == m_hListenThread)
@@ -51,8 +51,6 @@ namespace CODELIB
 
     void CLPCServerImpl::Close()
     {
-        ClearSenders();
-
         if(NULL != m_hListenPort)
         {
             NtClose(m_hListenPort);
@@ -66,14 +64,14 @@ namespace CODELIB
             m_hListenThread = NULL;
         }
 
+        ClearSenders();
+
         OnClose(this);
     }
 
     ISenders* CLPCServerImpl::GetSenders()
     {
-        EnterCriticalSection(&m_mapCS);
         static CLPCSenders senders(m_sendersMap);
-        LeaveCriticalSection(&m_mapCS);
         return &senders;
     }
 
@@ -128,39 +126,38 @@ namespace CODELIB
     DWORD CLPCServerImpl::_ListenThread(HANDLE hPort)
     {
         NTSTATUS            Status = STATUS_UNSUCCESSFUL;
-
-        CLPCMessage    ReceiveData;            // 接收请求数据
-        CLPCMessage*   ReplyData = NULL;       // 回送数据
+        CLPCMessage recevieMsg;
+        CLPCMessage* replyMsg = NULL;
         DWORD               LpcType = 0;
 
         for(; ;)
         {
             // 等待接收客户端消息,并回应,此函数会一直挂起,直到接收到数据
-            Status = NtReplyWaitReceivePort(m_hListenPort, 0, NULL == ReplyData ? NULL : ReplyData->GetHeader(), ReceiveData.GetHeader());
+            Status = NtReplyWaitReceivePort(m_hListenPort, 0, (NULL == replyMsg ? NULL : replyMsg->GetPortHeader()), recevieMsg.GetPortHeader());
 
             if(!NT_SUCCESS(Status))
             {
-                ReplyData = NULL;
+                replyMsg = NULL;
                 break;
             }
 
-            LpcType = ReceiveData.GetHeader()->u2.s2.Type;
+            LpcType = recevieMsg.GetPortHeader()->u2.s2.Type;
 
             if(LpcType == LPC_CONNECTION_REQUEST)           // 有客户端连接到来
             {
-                HandleConnect(&ReceiveData);
-                ReplyData = NULL;
+                HandleConnect(recevieMsg.GetPortHeader());
+                replyMsg = NULL;
                 continue;
             }
             else if(LpcType == LPC_CLIENT_DIED)             // 客户端进程退出
             {
-                ReplyData = NULL;
+                replyMsg = NULL;
                 HandleDisConnect(hPort);
                 continue;
             }
             else if(LpcType == LPC_PORT_CLOSED)             // 客户端端口关闭
             {
-                ReplyData = NULL;
+                replyMsg = NULL;
                 HandleDisConnect(hPort);
                 break;
 
@@ -168,20 +165,19 @@ namespace CODELIB
             else if(LpcType == LPC_REQUEST)     // 客户端调用NtRequestWaitReplyPort时触发此消息,表示客户端发来消息,并且要求服务端进行应答
             {
                 // 根据收到的消息填充应答消息的通信头结构体
-                CLPCMessage replyMsg;
-                replyMsg.SetHeader(*(ReceiveData.GetHeader()));
-                ReplyData = &replyMsg;
-                HandleRequest(hPort, &ReceiveData, ReplyData);
+                replyMsg = &recevieMsg;
+//              HandleRequest(hPort, &ReceiveData, ReplyData);
                 continue;
             }
             else if(LpcType == LPC_DATAGRAM)        // 客户端调用NtRequestPort时触发此消息,表示客户端发来消息,无需服务端进行应答
             {
-                HandleRequest(hPort, &ReceiveData, NULL);
+                replyMsg = NULL;
+//              HandleRequest(hPort, &ReceiveData, ReplyData);
                 continue;
             }
             else
             {
-                ReplyData = NULL;
+                replyMsg = NULL;
                 continue;
             }
         }
@@ -189,14 +185,13 @@ namespace CODELIB
         return 0;
     }
 
-    BOOL CLPCServerImpl::HandleConnect(CLPCMessage* connectInfo)
+    BOOL CLPCServerImpl::HandleConnect(PPORT_MESSAGE message)
     {
         // 准备接受客户端连接
 //         REMOTE_PORT_VIEW ClientView;
 //         PORT_VIEW ServerView;
-
         HANDLE hConnect = NULL;
-        NTSTATUS ntStatus = NtAcceptConnectPort(&hConnect, NULL, connectInfo->GetHeader(), TRUE, /*&ServerView*/NULL, /*&ClientView*/NULL);
+        NTSTATUS ntStatus = NtAcceptConnectPort(&hConnect, NULL, message, TRUE, /*&ServerView*/NULL, /*&ClientView*/NULL);
 
         if(!NT_SUCCESS(ntStatus))
             return FALSE;
@@ -206,12 +201,14 @@ namespace CODELIB
         if(!NT_SUCCESS(ntStatus))
             return FALSE;
 
-        CLPCSender* pSender = AddSender(hConnect);
+        CLPCSender* pSender = new CLPCSender(hConnect, this);
 
         if(NULL == pSender)
             return FALSE;
 
-        return OnConnect(this, pSender);
+        AddSender(hConnect, pSender);
+
+        return pSender->Connect();
     }
 
     BOOL CLPCServerImpl::HandleDisConnect(HANDLE hPort)
@@ -221,27 +218,13 @@ namespace CODELIB
         if(NULL != pSender)
         {
             RemoveSender(hPort);
-
-            pSender->DisConnect(this);
-            OnDisConnect(this, pSender);
-
+            pSender->DisConnect();
             delete pSender;
             pSender = NULL;
+            return TRUE;
         }
 
         return FALSE;
-    }
-
-    BOOL CLPCServerImpl::HandleRequest(HANDLE hPort, CLPCMessage* recevieData, CLPCMessage* replyData)
-    {
-        CLPCSender* pSender = dynamic_cast<CLPCSender*>(FindSenderByHandle(hPort));
-
-        if(NULL != pSender)
-        {
-            OnRecv(this, pSender, recevieData);
-        }
-
-        return TRUE;
     }
 
     HANDLE CLPCServerImpl::CreateListenThread(HANDLE hPort)
@@ -262,25 +245,6 @@ namespace CODELIB
         LeaveCriticalSection(&m_mapCS);
     }
 
-    CLPCSender* CLPCServerImpl::AddSender(HANDLE hPort)
-    {
-        CLPCSender* pSender = new CLPCSender(hPort);
-
-        if(NULL == pSender)
-            return FALSE;
-
-        if(!pSender->Connect(this))
-        {
-            delete pSender;
-            pSender = NULL;
-            return NULL;
-        }
-
-        AddSender(hPort, pSender);
-
-        return pSender;
-    }
-
     void CLPCServerImpl::RemoveSender(HANDLE hPort)
     {
         EnterCriticalSection(&m_mapCS);
@@ -290,14 +254,16 @@ namespace CODELIB
 
     ISender* CLPCServerImpl::FindSenderByHandle(HANDLE hPort)
     {
-        EnterCriticalSection(&m_mapCS);
         ISender* pSender = NULL;
+        EnterCriticalSection(&m_mapCS);
+
         SenderMap::const_iterator cit = m_sendersMap.find(hPort);
 
         if(cit != m_sendersMap.end())
             pSender = cit->second;
 
         LeaveCriticalSection(&m_mapCS);
+
         return pSender;
     }
 
@@ -311,7 +277,7 @@ namespace CODELIB
 
             if(NULL != pSender)
             {
-                pSender->DisConnect(this);
+                pSender->DisConnect();
                 delete pSender;
                 pSender = NULL;
             }
@@ -319,12 +285,6 @@ namespace CODELIB
 
         m_sendersMap.clear();
     }
-
-    HANDLE CLPCServerImpl::GetListenPortHandle()
-    {
-        return m_hListenPort;
-    }
-
 
     //////////////////////////////////////////////////////////////////////////
     CLPCSenders::CLPCSenders(SenderMap senderMap): m_senderMap(senderMap)
@@ -334,7 +294,7 @@ namespace CODELIB
 
     CLPCSenders::~CLPCSenders()
     {
-//        m_cit = m_senderMap.end();
+        m_cit = m_senderMap.end();
     }
 
     void CLPCSenders::Begin()
@@ -349,16 +309,12 @@ namespace CODELIB
 
     void CLPCSenders::Next()
     {
-        if(!End())
-            m_cit++;
+        m_cit++;
     }
 
     ISender* CLPCSenders::GetCurrent()
     {
-        if(!End())
-            return m_cit->second;
-
-        return NULL;
+        return m_cit->second;
     }
 
     DWORD CLPCSenders::GetSize()
@@ -372,12 +328,23 @@ namespace CODELIB
         return 0;
     }
 
+    IMessage* CLPCSender::AllocMessage()
+    {
+        return NULL;
+    }
+
+    void CLPCSender::FreeMessage(IMessage* pMessage)
+    {
+
+    }
+
     BOOL CLPCSender::SendMessage(IMessage* pMessage)
     {
         return FALSE;
     }
 
-    CLPCSender::CLPCSender(HANDLE hPort): m_hPort(hPort)
+    CLPCSender::CLPCSender(HANDLE hPort, CLPCServerImpl* pServer): m_hPort(hPort)
+        , m_pServer(pServer)
         , m_hListenThread(NULL)
     {
 
@@ -388,110 +355,78 @@ namespace CODELIB
 
     }
 
-    BOOL CLPCSender::Connect(CLPCServerImpl* pServer)
+    BOOL CLPCSender::Connect()
     {
-        if(NULL == pServer)
+        if(NULL == m_pServer)
             return FALSE;
 
         if(NULL == m_hListenThread)
-            m_hListenThread = pServer->CreateListenThread(m_hPort);
+            m_hListenThread = m_pServer->CreateListenThread(m_hPort);
+
+        m_pServer->OnConnect(m_pServer, this);
 
         return (NULL != m_hListenThread);
     }
 
-    void CLPCSender::DisConnect(CLPCServerImpl* pServer)
+    void CLPCSender::DisConnect()
     {
-        if(NULL != m_hPort && (m_hPort != pServer->GetListenPortHandle()))
-        {
-            NtClose(m_hPort);
-            m_hPort = NULL;
-        }
-
         if(NULL != m_hListenThread)
         {
             CloseHandle(m_hListenThread);
             m_hListenThread = NULL;
         }
+
+//         if(NULL != m_hPort)
+//         {
+//             NtClose(m_hPort);
+//             m_hPort = NULL;
+//         }
+
+        if(NULL != m_pServer)
+            m_pServer->OnDisConnect(m_pServer, this);
     }
 
-    BOOL CLPCSender::AllocMessage(IMessage* pMessage)
+	//////////////////////////////////////////////////////////////////////////
+	CLPCMessage::CLPCMessage(): m_dwBufSize(0)
+	{
+		InitializeMessageHeader(&m_portHeader, sizeof(CLPCMessage), 0);
+		ZeroMemory(m_lpFixBuf, MAX_LPC_DATA);
+	}
+
+	CLPCMessage::~CLPCMessage()
+	{
+
+	}
+
+    MESSAGE_TYPE CLPCMessage::GetMessageType()
     {
-
-        return FALSE;
-    }
-
-    void CLPCSender::FreeMessage(IMessage* pMessage)
-    {
-
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    CLPCMessage::CLPCMessage(): m_dwBufSize(0)
-        , m_bUseSectionView(FALSE)
-    {
-        InitializeMessageHeader(&m_LpcHeader, sizeof(CLPCMessage), 0);
-        ZeroMemory(m_lpFixedBuf, FIXEDBUFLEN);
-    }
-
-    CLPCMessage::~CLPCMessage()
-    {
-
-    }
-
-    CODELIB::MESSAGE_TYPE CLPCMessage::GetMessageType()
-    {
-        return m_messageType;
+        return m_msgType;
     }
 
     LPVOID CLPCMessage::GetBuffer(DWORD& dwBufferSize)
     {
-        LPVOID lpBuf = NULL;
-
-        if(IsUseSectionView())
-        {
-
-        }
-        else
-        {
-            lpBuf = m_lpFixedBuf;
-            dwBufferSize = m_dwBufSize;
-        }
-
+        LPVOID lpBuf = m_lpFixBuf;
+        dwBufferSize = m_dwBufSize;
         return lpBuf;
     }
 
-    void CLPCMessage::SetMessageType(MESSAGE_TYPE messageType)
+    void CLPCMessage::SetMessageType(MESSAGE_TYPE msgType)
     {
-        m_messageType = messageType;
+        m_msgType = msgType;
     }
 
     void CLPCMessage::SetBuffer(LPVOID lpBuf, DWORD dwBufSize)
     {
-        if(dwBufSize <= FIXEDBUFLEN)    // 数据大小不大于LPC内定长度,则直接使用
+        if((NULL != lpBuf) && (0 != dwBufSize))
         {
-            m_bUseSectionView = FALSE;
-            memcpy_s(m_lpFixedBuf, FIXEDBUFLEN, lpBuf, dwBufSize);
+            memcpy_s(m_lpFixBuf, MAX_LPC_DATA, lpBuf, dwBufSize);
             m_dwBufSize = dwBufSize;
         }
-        else // 否则的话要使用内存映射文件
-        {
-            m_bUseSectionView = TRUE;
-        }
     }
 
-    BOOL CLPCMessage::IsUseSectionView()
+    PPORT_MESSAGE CLPCMessage::GetPortHeader()
     {
-        return m_bUseSectionView;
-    }
-
-    PPORT_MESSAGE CLPCMessage::GetHeader()
-    {
-        return &m_LpcHeader;
-    }
-
-    void CLPCMessage::SetHeader(PORT_MESSAGE lpcHeader)
-    {
-        memcpy_s(&m_LpcHeader, sizeof(PORT_MESSAGE), &lpcHeader, sizeof(PORT_MESSAGE));
+        return &m_portHeader;
     }
 
 }
