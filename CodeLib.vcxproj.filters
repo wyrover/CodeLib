@@ -72,6 +72,24 @@
     <ClInclude Include="src\LPCClientImpl.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\IoCompletePort.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NamedPipeWrapper.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IIPCInterface.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NamedPipeServerImpl.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\IPCMessage.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NamedPipeClientImpl.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -102,6 +120,12 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\LPCClientImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NamedPipeServerImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NamedPipeClientImpl.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>

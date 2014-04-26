@@ -12,6 +12,8 @@ using  namespace CODELIB;
 #include <stdlib.h>
 #include <crtdbg.h>
 #include <locale.h>
+#include "IIPCInterface.h"
+#include "src\NamedPipeServerImpl.h"
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -19,6 +21,22 @@ using  namespace CODELIB;
 #define new DBG_NEW
 #endif
 #endif
+
+typedef struct _USER_DATA_PACKAGE
+{
+    _USER_DATA_PACKAGE(DWORD PID, LPVOID lpBuf, DWORD dwBufSize)
+    {
+        dwPackageType = PID;
+
+        if(NULL != lpBuf && 0 != dwBufSize && dwBufSize <= MAX_PATH)
+            memcpy_s(lpUserBuf, MAX_PATH, lpBuf, dwBufSize);
+
+        dwTotalSize = sizeof(_USER_DATA_PACKAGE) - MAX_PATH + dwBufSize;
+    }
+    DWORD dwPackageType;
+    BYTE lpUserBuf[MAX_PATH];
+    DWORD dwTotalSize;
+} USER_DATA_PACKAGE, *LPUSER_DATA_PACKAGE;
 
 void TestProcess()
 {
@@ -204,6 +222,138 @@ void TestPLCClient()
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+
+BOOL g_bExit = FALSE;
+class CNamedPipeEvent : public IIPCEvent
+{
+public:
+    CNamedPipeEvent()
+    {
+
+    }
+
+    virtual ~CNamedPipeEvent()
+    {
+
+    }
+
+    virtual void OnRequest(IIPCObject* pServer, IIPCConnector* pClient, LPCVOID lpBuf, DWORD dwBufSize)
+    {
+        if(NULL == lpBuf || dwBufSize == 0)
+            return ;
+
+        LPUSER_DATA_PACKAGE userRequest = (LPUSER_DATA_PACKAGE)lpBuf;
+        _tsetlocale(LC_ALL, _T("chs"));
+        _tprintf_s(_T("%s"), userRequest->lpUserBuf);
+
+
+        if(userRequest->dwPackageType == 100)
+        {
+            TCHAR sReply[MAX_PATH] = {0};
+            _stprintf_s(sReply, _T("同步应答：1+1=2 \r\n"));
+            DWORD dwReplySize = (_tcslen(sReply) + 1) * sizeof(TCHAR);
+
+            _USER_DATA_PACKAGE userRequest(100, sReply, dwReplySize);
+
+            pClient->PostMessage(&userRequest, userRequest.dwTotalSize);
+        }
+        else
+        {
+            TCHAR sReply[MAX_PATH] = {0};
+            _stprintf_s(sReply, _T("异步应答：你好，客户端 \r\n"));
+            DWORD dwReplySize = (_tcslen(sReply) + 1) * sizeof(TCHAR);
+
+            _USER_DATA_PACKAGE userRequest(0, sReply, dwReplySize);
+
+            pClient->PostMessage(&userRequest, userRequest.dwTotalSize);
+        }
+
+    }
+};
+
+DWORD __stdcall PostThread(LPVOID lpParam)
+{
+    IIPCObject* pServer = (IIPCObject*)lpParam;
+
+    IIPCConnectorIterator* pClientIterator = pServer->GetClients();
+
+    while(FALSE == g_bExit)
+    {
+        for(pClientIterator->Begin(); !pClientIterator->End(); pClientIterator->Next())
+        {
+            IIPCConnector* aClient = pClientIterator->GetCurrent();
+
+            if(NULL == aClient)
+                continue;
+
+            TCHAR* sRequest = _T("异步消息：你好，客户端端\r\n");
+            DWORD dwReplySize = (_tcslen(sRequest) + 1) * sizeof(TCHAR);
+            _USER_DATA_PACKAGE userRequest(1, sRequest, dwReplySize);
+
+            aClient->PostMessage(&userRequest, userRequest.dwTotalSize);
+        }
+
+        Sleep(10);
+    }
+
+    return 0;
+}
+
+
+void TestRequestAndReply(IIPCObject* pNamedPipeClient)
+{
+    IIPCConnectorIterator* pClientIterator = pNamedPipeClient->GetClients();
+
+    while(FALSE == g_bExit)
+    {
+        for(pClientIterator->Begin(); !pClientIterator->End(); pClientIterator->Next())
+        {
+            IIPCConnector* aClient = pClientIterator->GetCurrent();
+
+            if(NULL == aClient)
+                continue;
+
+            TCHAR* sRequest = _T("1+1=2\r\n");
+            DWORD dwRequestSize = _tcslen(sRequest) * sizeof(TCHAR);
+            DWORD dwTransSize = 0;
+
+            TCHAR sReply[MAX_PATH] = {0};
+
+            if(aClient->RequestAndReply(sRequest, dwRequestSize, sReply, MAX_PATH))
+            {
+                _tsetlocale(LC_ALL, _T("chs"));
+                _tprintf_s(_T("%s"), sReply);
+            }
+        }
+    }
+}
+
+void TestNamedPipeServer()
+{
+    IIPCEvent* pEvent = new CNamedPipeEvent;
+    IIPCObject* pNamedPipeServer = new CNamedPipeServerImpl(pEvent);
+
+    if(NULL == pNamedPipeServer)
+        return ;
+
+    if(!pNamedPipeServer->Create(_T("NamedPipeServer")))
+        return ;
+
+    _getch();
+
+    pNamedPipeServer->Close();
+    delete pNamedPipeServer;
+    pNamedPipeServer = NULL;
+    delete pEvent;
+    pEvent = NULL;
+}
+
+void TestHide()
+{
+
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -212,7 +362,8 @@ int _tmain(int argc, _TCHAR* argv[])
 //    TestFileMap();
 //    TestMiniDump();
 //    TestThread();
-    TestLPC();
+//    TestLPC();
+    TestNamedPipeServer();
     return 0;
 }
 
