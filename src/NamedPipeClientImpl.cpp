@@ -195,7 +195,7 @@ DWORD CNamedPipeClientImpl::IOCompletionThread(LPVOID lpParam)
         }
         else if(!bSucess && GetLastError() == ERROR_BROKEN_PIPE)
         {
-            CNamedPipeClientImpl::FreeOverlapped(message);
+            CNamedPipeClientImpl::FreeOverlapped(&message);
             continue;
         }
 
@@ -214,17 +214,17 @@ DWORD CNamedPipeClientImpl::IOCompletionThread(LPVOID lpParam)
                 if(message->GetCustomBuffer(&lpBuf, &dwBufSize))
                     pThis->m_pEvent->OnRequest(pThis, pClient, lpBuf, dwBufSize);
 
-                CNamedPipeClientImpl::FreeOverlapped(message);
+                CNamedPipeClientImpl::FreeOverlapped(&message);
                 pClient->DoRead();
                 break;
             }
 
             case IPC_OVERLAPPED_WRITE:
-                CNamedPipeClientImpl::FreeOverlapped(message);
+                CNamedPipeClientImpl::FreeOverlapped(&message);
                 break;
 
             default:
-                CNamedPipeClientImpl::FreeOverlapped(message);
+                CNamedPipeClientImpl::FreeOverlapped(&message);
                 break;
         }
     }
@@ -249,10 +249,10 @@ BOOL CNamedPipeClientImpl::DoRead()
     return (bSucess || ERROR_IO_PENDING == GetLastError());
 }
 
-void CNamedPipeClientImpl::FreeOverlapped(CNamedPipeMessage* dataOverlapped)
+void CNamedPipeClientImpl::FreeOverlapped(CNamedPipeMessage** dataOverlapped)
 {
-    if(NULL != dataOverlapped)
-        delete dataOverlapped;
+    if(NULL != *dataOverlapped)
+        delete *dataOverlapped;
 
-    dataOverlapped = NULL;
+    *dataOverlapped = NULL;
 }

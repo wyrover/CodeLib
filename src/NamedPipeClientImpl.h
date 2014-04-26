@@ -38,7 +38,7 @@ public:
 
 protected:
 
-    static void FreeOverlapped(CNamedPipeMessage* dataOverlapped);
+    static void FreeOverlapped(CNamedPipeMessage** dataOverlapped);
 
     static DWORD WINAPI IOCompletionThread(LPVOID lpParam);
 

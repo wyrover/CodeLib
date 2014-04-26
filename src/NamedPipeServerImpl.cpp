@@ -306,14 +306,14 @@ BOOL CNamedPipeConnector::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize,
             bSucess = TRUE;
     }
 
-    CNamedPipeMessage recePackage(NULL, 0);
+    CNamedPipeMessage* recePackage = new CNamedPipeMessage(NULL, 0);
 
     DWORD dwReaded = 0;
-    bSucess = m_pipe.ReadFile(&recePackage.m_package, sizeof(recePackage.m_package), &dwReaded, recePackage.GetOvHeader());
+    bSucess = m_pipe.ReadFile(&recePackage->m_package, sizeof(recePackage->m_package), &dwReaded, recePackage->GetOvHeader());
 
     if(!bSucess && GetLastError() == ERROR_IO_PENDING)
     {
-        if(GetOverlappedResult(m_pipe.GetHandle(), recePackage.GetOvHeader(), &dwReaded, TRUE))
+        if(GetOverlappedResult(m_pipe.GetHandle(), recePackage->GetOvHeader(), &dwReaded, TRUE))
             bSucess = TRUE;
     }
 
@@ -322,7 +322,7 @@ BOOL CNamedPipeConnector::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize,
         LPVOID* lpBuf = NULL;
         DWORD dwBufSize = 0;
 
-        if(recePackage.GetCustomBuffer(lpBuf, &dwBufSize))
+        if(recePackage->GetCustomBuffer(lpBuf, &dwBufSize))
             memcpy_s(lpReplyBuf, dwReplyBufSize, lpBuf, dwBufSize);
     }
 
