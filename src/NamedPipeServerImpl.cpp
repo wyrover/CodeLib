@@ -131,12 +131,12 @@ IIPCConnector* CNamedPipeServerImpl::GetCurrent()
     return pConnector;
 }
 
-void CNamedPipeServerImpl::FreeOverlapped(CNamedPipeMessage** dataOverlapped)
+void CNamedPipeServerImpl::FreeOverlapped(CNamedPipeMessage* dataOverlapped)
 {
-    if(NULL != *dataOverlapped)
-        delete *dataOverlapped;
+    if(NULL != dataOverlapped)
+        delete dataOverlapped;
 
-    *dataOverlapped = NULL;
+    dataOverlapped = NULL;
 }
 
 DWORD WINAPI CNamedPipeServerImpl::IOCompletionThread(LPVOID lpParam)
@@ -162,8 +162,11 @@ DWORD WINAPI CNamedPipeServerImpl::IOCompletionThread(LPVOID lpParam)
         }
         else if(!bSucess && GetLastError() == ERROR_BROKEN_PIPE)
         {
+            EnterCriticalSection(&pThis->m_csClientMap);
             pThis->RemoveAndCloseClient(pClient);
-            CNamedPipeServerImpl::FreeOverlapped(&message);
+            CNamedPipeServerImpl::FreeOverlapped(message);
+            pClient = NULL;
+            LeaveCriticalSection(&pThis->m_csClientMap);
             continue;
         }
 
@@ -186,20 +189,24 @@ DWORD WINAPI CNamedPipeServerImpl::IOCompletionThread(LPVOID lpParam)
                 VOID* lpBuf = NULL;
                 DWORD dwBufSize = 0;
 
+                EnterCriticalSection(&pThis->m_csClientMap);
+
                 if(message->GetCustomBuffer(&lpBuf, &dwBufSize))
                     pThis->m_pEvent->OnRequest(pThis, pClient, lpBuf, dwBufSize);
 
-                CNamedPipeServerImpl::FreeOverlapped(&message);
-                pClient->DoRead();
+                LeaveCriticalSection(&pThis->m_csClientMap);
+
+                CNamedPipeServerImpl::FreeOverlapped(message);
                 break;
             }
 
             case IPC_OVERLAPPED_WRITE:
-                CNamedPipeServerImpl::FreeOverlapped(&message);
+                pClient->DoRead();
+                CNamedPipeServerImpl::FreeOverlapped(message);
                 break;
 
             default:
-                CNamedPipeServerImpl::FreeOverlapped(&message);
+                CNamedPipeServerImpl::FreeOverlapped(message);
                 break;
         }
     }
@@ -236,29 +243,23 @@ void CNamedPipeServerImpl::RemoveAndCloseClient(CNamedPipeConnector* pClient)
 {
     EnterCriticalSection(&m_csClientMap);
     ConnectorMap::const_iterator cit = FindClient(pClient->GetHandle());
+    pClient->Close();
+    delete pClient;
+    pClient = NULL;
 
     if(cit != m_connectorMap.end())
         m_connectorMap.erase(cit);
 
-    pClient->Close();
-    delete pClient;
-    pClient = NULL;
     LeaveCriticalSection(&m_csClientMap);
 }
 
 CNamedPipeConnector::CNamedPipeConnector(): m_pConnPackage(NULL)
-    , m_pLastMessage(NULL)
 {
     m_pConnPackage = new CNamedPipeMessage(NULL, 0, IPC_OVERLAPPED_CONNECT);
 }
 
 CNamedPipeConnector::~CNamedPipeConnector()
 {
-    if(NULL != m_pLastMessage)
-        delete m_pLastMessage;
-
-    m_pLastMessage = NULL;
-
     if(NULL != m_pConnPackage)
         delete m_pConnPackage;
 
@@ -287,46 +288,10 @@ BOOL CNamedPipeConnector::PostMessage(LPCVOID lpBuf, DWORD dwBufSize)
     return (bSucess || GetLastError() == ERROR_IO_PENDING);
 }
 
-BOOL CNamedPipeConnector::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize)
+BOOL CNamedPipeConnector::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize, DWORD dwTimeout)
 {
-    if(NULL == lpSendBuf || dwSendBufSize <= 0)
-        return FALSE;
-
-    if(NULL == lpReplyBuf || dwReplyBufSize <= 0)
-        return FALSE;
-
-    CNamedPipeMessage* sendPackage = new CNamedPipeMessage(lpSendBuf, dwSendBufSize);
-
-    DWORD dwWrited = 0;
-    BOOL bSucess = m_pipe.WriteFile(&sendPackage->m_package, sendPackage->m_package.dwTotalSize, &dwWrited, sendPackage->GetOvHeader());
-
-    if(!bSucess && GetLastError() == ERROR_IO_PENDING)
-    {
-        if(GetOverlappedResult(m_pipe.GetHandle(), sendPackage->GetOvHeader(), &dwWrited, TRUE))
-            bSucess = TRUE;
-    }
-
-    CNamedPipeMessage* recePackage = new CNamedPipeMessage(NULL, 0);
-
-    DWORD dwReaded = 0;
-    bSucess = m_pipe.ReadFile(&recePackage->m_package, sizeof(recePackage->m_package), &dwReaded, recePackage->GetOvHeader());
-
-    if(!bSucess && GetLastError() == ERROR_IO_PENDING)
-    {
-        if(GetOverlappedResult(m_pipe.GetHandle(), recePackage->GetOvHeader(), &dwReaded, TRUE))
-            bSucess = TRUE;
-    }
-
-    if(bSucess)
-    {
-        LPVOID* lpBuf = NULL;
-        DWORD dwBufSize = 0;
-
-        if(recePackage->GetCustomBuffer(lpBuf, &dwBufSize))
-            memcpy_s(lpReplyBuf, dwReplyBufSize, lpBuf, dwBufSize);
-    }
-
-    return bSucess;
+    throw _T("the server sshoudn't implemention this method");
+    return FALSE;
 }
 
 BOOL CNamedPipeConnector::Create(LPCTSTR lpPipeName)
@@ -353,7 +318,6 @@ HANDLE CNamedPipeConnector::GetHandle()
 BOOL CNamedPipeConnector::DoRead()
 {
     CNamedPipeMessage* package = new CNamedPipeMessage(NULL, 0, IPC_OVERLAPPED_READ);
-    m_pLastMessage = package;
     BOOL bSucess = m_pipe.ReadFile(&package->m_package, sizeof(package->m_package), NULL, package->GetOvHeader());
     return (bSucess || ERROR_IO_PENDING == GetLastError());
 }

@@ -252,21 +252,19 @@ public:
         {
             TCHAR sReply[MAX_PATH] = {0};
             _stprintf_s(sReply, _T("同步应答：1+1=2 \r\n"));
-            DWORD dwReplySize = (_tcslen(sReply) + 1) * sizeof(TCHAR);
 
-            _USER_DATA_PACKAGE userRequest(100, sReply, dwReplySize);
+            _USER_DATA_PACKAGE userRequest(100, sReply, (_tcslen(sReply) + 1)*sizeof(TCHAR)) ;
 
-            pClient->PostMessage(&userRequest, userRequest.dwTotalSize);
+            pClient->PostMessage(&userRequest, sizeof(_USER_DATA_PACKAGE));
         }
         else
         {
             TCHAR sReply[MAX_PATH] = {0};
             _stprintf_s(sReply, _T("异步应答：你好，客户端 \r\n"));
-            DWORD dwReplySize = (_tcslen(sReply) + 1) * sizeof(TCHAR);
 
-            _USER_DATA_PACKAGE userRequest(0, sReply, dwReplySize);
+            _USER_DATA_PACKAGE userRequest(1, sReply, (_tcslen(sReply) + 1)*sizeof(TCHAR)) ;
 
-            pClient->PostMessage(&userRequest, userRequest.dwTotalSize);
+            pClient->PostMessage(&userRequest, sizeof(_USER_DATA_PACKAGE));
         }
 
     }
@@ -288,7 +286,7 @@ DWORD __stdcall PostThread(LPVOID lpParam)
                 continue;
 
             TCHAR* sRequest = _T("异步消息：你好，客户端端\r\n");
-            DWORD dwReplySize = (_tcslen(sRequest) + 1) * sizeof(TCHAR);
+            DWORD dwReplySize = (DWORD)(_tcslen(sRequest) + 1) * sizeof(TCHAR);
             _USER_DATA_PACKAGE userRequest(1, sRequest, dwReplySize);
 
             aClient->PostMessage(&userRequest, userRequest.dwTotalSize);
@@ -315,7 +313,7 @@ void TestRequestAndReply(IIPCObject* pNamedPipeClient)
                 continue;
 
             TCHAR* sRequest = _T("1+1=2\r\n");
-            DWORD dwRequestSize = _tcslen(sRequest) * sizeof(TCHAR);
+            DWORD dwRequestSize = (DWORD)_tcslen(sRequest) * sizeof(TCHAR);
             DWORD dwTransSize = 0;
 
             TCHAR sReply[MAX_PATH] = {0};

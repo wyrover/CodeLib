@@ -1,8 +1,8 @@
 /********************************************************************
-	created:	2014/04/26
-	file base:	IIPCInterface
-	author:		redcode
-	purpose:	the interface for the IPC
+    created:    2014/04/26
+    file base:  IIPCInterface
+    author:     redcode
+    purpose:    the interface for the IPC
 *********************************************************************/
 
 #pragma once
@@ -24,7 +24,7 @@ struct pure_virtual IIPCConnector
     virtual DWORD GetSID() = 0;
     virtual LPCTSTR GetName() = 0;
     virtual BOOL PostMessage(LPCVOID lpBuf, DWORD dwBufSize) = 0;
-    virtual BOOL RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize) = 0;
+    virtual BOOL RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize, DWORD dwTimeout = 3000) = 0;
 };
 
 struct pure_virtual IIPCConnectorIterator

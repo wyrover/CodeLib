@@ -6,10 +6,12 @@
 #include "ThreadImpl.h"
 #include "LPCServerImpl.h"
 #include "LPCClientImpl.h"
+#include "NamedPipeServerImpl.h"
+#include "NamedPipeClientImpl.h"
 
 namespace CODELIB
 {
-    LPVOID CreateInstance(INTERFACE_NAME interfaceName,LPVOID lpCreateParam)
+    LPVOID CreateInstance(INTERFACE_NAME interfaceName, LPVOID lpCreateParam)
     {
         LPVOID pInterface = NULL;
 
@@ -45,16 +47,30 @@ namespace CODELIB
                 break;
             }
 
-			case CODELIB_LPCSERVER:
-				{
-					pInterface=new CODELIB::CLPCServerImpl((ILPCEvent*)lpCreateParam);
-					break;
-				}
-			case CODELIB_LPCCLIENT:
-				{
-					pInterface=new CODELIB::CLPCClientImpl((ILPCEvent*)lpCreateParam);
-					break;
-				}
+            case CODELIB_LPCSERVER:
+            {
+                pInterface = new CODELIB::CLPCServerImpl((ILPCEvent*)lpCreateParam);
+                break;
+            }
+
+            case CODELIB_LPCCLIENT:
+            {
+                pInterface = new CODELIB::CLPCClientImpl((ILPCEvent*)lpCreateParam);
+                break;
+            }
+
+            case CODELIB_NAMEDPIPESERVER:
+            {
+                pInterface = new CNamedPipeServerImpl((IIPCEvent*)lpCreateParam);
+                break;
+            }
+
+            case CODELIB_NAMEDPIPECLIENT:
+            {
+                pInterface = new CNamedPipeClientImpl((IIPCEvent*)lpCreateParam);
+                break;
+            }
+
             default:
                 break;
         }

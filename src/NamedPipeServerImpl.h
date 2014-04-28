@@ -32,7 +32,7 @@ public:
 
     virtual IIPCConnector* GetCurrent();
 
-    static void FreeOverlapped(CNamedPipeMessage** dataOverlapped);
+    static void FreeOverlapped(CNamedPipeMessage* dataOverlapped);
 
 protected:
 
@@ -86,7 +86,7 @@ public:
 
     virtual BOOL PostMessage(LPCVOID lpBuf, DWORD dwBufSize);
 
-    virtual BOOL RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplySize);
+    virtual BOOL RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplySize, DWORD dwTimeout = 3000);
 
     friend class CNamedPipeServerImpl;
 
@@ -96,6 +96,4 @@ private:
     DWORD m_dwProcessID;
 
     CNamedPipeMessage* m_pConnPackage;
-
-	CNamedPipeMessage* m_pLastMessage;
 };

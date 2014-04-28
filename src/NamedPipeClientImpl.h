@@ -26,7 +26,7 @@ public:
 
     virtual BOOL PostMessage(LPCVOID lpBuf, DWORD dwBufSize);
 
-    virtual BOOL RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize);
+    virtual BOOL RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize, DWORD dwTimeout = 3000);
 
     virtual void Begin();
 

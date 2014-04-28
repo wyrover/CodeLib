@@ -119,7 +119,7 @@ IIPCConnector* CNamedPipeClientImpl::GetCurrent()
     return this;
 }
 
-BOOL CNamedPipeClientImpl::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize)
+BOOL CNamedPipeClientImpl::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize, LPVOID lpReplyBuf, DWORD dwReplyBufSize, DWORD dwTimeout)
 {
     if(NULL == lpSendBuf || dwSendBufSize <= 0)
         return FALSE;
@@ -134,7 +134,8 @@ BOOL CNamedPipeClientImpl::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize
 
     if(!bSucess && GetLastError() == ERROR_IO_PENDING)
     {
-        if(GetOverlappedResult(m_pipe.GetHandle(), sendPackage->GetOvHeader(), &dwWrited, TRUE))
+//        if(GetOverlappedResult(m_pipe.GetHandle(), sendPackage->GetOvHeader(), &dwWrited, TRUE))
+        if(WAIT_OBJECT_0 == WaitForSingleObject(sendPackage->GetOvHeader()->hEvent, dwTimeout))
             bSucess = TRUE;
     }
 
@@ -145,7 +146,8 @@ BOOL CNamedPipeClientImpl::RequestAndReply(LPVOID lpSendBuf, DWORD dwSendBufSize
 
     if(!bSucess && GetLastError() == ERROR_IO_PENDING)
     {
-        if(GetOverlappedResult(m_pipe.GetHandle(), recePackage->GetOvHeader(), &dwReaded, TRUE))
+//       if(GetOverlappedResult(m_pipe.GetHandle(), recePackage->GetOvHeader(), &dwReaded, TRUE))
+        if(WAIT_OBJECT_0 == WaitForSingleObject(recePackage->GetOvHeader()->hEvent, dwTimeout))
             bSucess = TRUE;
     }
 
@@ -215,11 +217,11 @@ DWORD CNamedPipeClientImpl::IOCompletionThread(LPVOID lpParam)
                     pThis->m_pEvent->OnRequest(pThis, pClient, lpBuf, dwBufSize);
 
                 CNamedPipeClientImpl::FreeOverlapped(&message);
-                pClient->DoRead();
                 break;
             }
 
             case IPC_OVERLAPPED_WRITE:
+                pClient->DoRead();
                 CNamedPipeClientImpl::FreeOverlapped(&message);
                 break;
 

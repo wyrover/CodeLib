@@ -51,7 +51,7 @@ namespace CODELIB
         DWORD dwReaded = 0;
 
         if(NULL != m_hProcess)
-            bRet =::ReadProcessMemory(m_hProcess, lpBase, lpBuf, dwWantRead, (size_t*)&dwReaded);
+            bRet =::ReadProcessMemory(m_hProcess, lpBase, lpBuf, dwWantRead, (SIZE_T*)&dwReaded);
 
         return ((TRUE == bRet) && (dwWantRead == dwReaded));
     }
@@ -62,7 +62,7 @@ namespace CODELIB
         DWORD dwWrited = 0;
 
         if(NULL != m_hProcess)
-            bRet =::WriteProcessMemory(m_hProcess, lpBase, lpBuf, dwWantWrite, (size_t*)&dwWrited);
+            bRet =::WriteProcessMemory(m_hProcess, lpBase, lpBuf, dwWantWrite, (SIZE_T*)&dwWrited);
 
         return ((TRUE == bRet) && (dwWrited == dwWantWrite));
     }
