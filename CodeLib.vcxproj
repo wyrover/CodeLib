@@ -83,7 +83,7 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>include\</AdditionalIncludeDirectories>
     </ClCompile>
@@ -155,6 +155,11 @@
     <ClInclude Include="include\IMiniDump.h" />
     <ClInclude Include="include\IProcess.h" />
     <ClInclude Include="include\IThread.h" />
+    <ClInclude Include="include\IVolumeParse.h" />
+    <ClInclude Include="src\CdfsVolumeParse.h" />
+    <ClInclude Include="src\Fat16VolumeParse.h" />
+    <ClInclude Include="src\Fat32VolumeParse.h" />
+    <ClInclude Include="src\FileScan.h" />
     <ClInclude Include="src\IoCompletePort.h" />
     <ClInclude Include="src\IPCMessage.h" />
     <ClInclude Include="src\LPCClientImpl.h" />
@@ -165,12 +170,17 @@
     <ClInclude Include="src\NamedPipeClientImpl.h" />
     <ClInclude Include="src\NamedPipeServerImpl.h" />
     <ClInclude Include="src\NamedPipeWrapper.h" />
+    <ClInclude Include="src\NtfsVolumeParse.h" />
     <ClInclude Include="src\ProcessImpl.h" />
     <ClInclude Include="src\ThreadImpl.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\CdfsVolumeParse.cpp" />
+    <ClCompile Include="src\Fat16VolumeParse.cpp" />
+    <ClCompile Include="src\Fat32VolumeParse.cpp" />
+    <ClCompile Include="src\FileScan.cpp" />
     <ClCompile Include="src\LPCClientImpl.cpp" />
     <ClCompile Include="src\LPCServerImpl.cpp" />
     <ClCompile Include="src\MiniDumpImpl.cpp" />
@@ -179,6 +189,7 @@
     <ClCompile Include="src\IniFileImpl.cpp" />
     <ClCompile Include="src\NamedPipeClientImpl.cpp" />
     <ClCompile Include="src\NamedPipeServerImpl.cpp" />
+    <ClCompile Include="src\NtfsVolumeParse.cpp" />
     <ClCompile Include="src\ProcessImpl.cpp" />
     <ClCompile Include="src\ThreadImpl.cpp" />
     <ClCompile Include="Test.cpp" />

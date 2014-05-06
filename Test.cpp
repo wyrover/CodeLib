@@ -14,6 +14,7 @@ using  namespace CODELIB;
 #include <locale.h>
 #include "IIPCInterface.h"
 #include "src\NamedPipeServerImpl.h"
+#include "src\FileScan.h"
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -347,9 +348,22 @@ void TestNamedPipeServer()
     pEvent = NULL;
 }
 
-void TestHide()
+void TestFileScan()
 {
+// 	const TCHAR* sDriverName=_T("\\\\.\\C:");
+// 	CNtfsVolumeParse diskVolume(sDriverName);
+// 	if (diskVolume.OpenVolume())
+// 	{
+// 		ULONGLONG fileTotalCount=diskVolume.GetRecordTotalSize();
+// 		if (!diskVolume.ScanVolume())
+// 		{
+// 			_tprintf_s(_T("ÎÄ¼þÉ¨ÃèÊ§°Ü\r\n"));
+// 		}
+// 		diskVolume.CloseVolume();
+// 	}
 
+	CFileScan fileScan;
+	fileScan.ExecCommand(VOLUME_FS_SCANFILECHANGE);
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -361,7 +375,8 @@ int _tmain(int argc, _TCHAR* argv[])
 //    TestMiniDump();
 //    TestThread();
 //    TestLPC();
-    TestNamedPipeServer();
+//    TestNamedPipeServer();
+	TestFileScan();
     return 0;
 }
 

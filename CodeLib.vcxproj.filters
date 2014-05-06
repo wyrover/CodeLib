@@ -90,6 +90,24 @@
     <ClInclude Include="src\NamedPipeClientImpl.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\FileScan.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="include\IVolumeParse.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CdfsVolumeParse.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fat16VolumeParse.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Fat32VolumeParse.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NtfsVolumeParse.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -126,6 +144,21 @@
       <Filter>src</Filter>
     </ClCompile>
     <ClCompile Include="src\NamedPipeClientImpl.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\FileScan.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CdfsVolumeParse.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fat16VolumeParse.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Fat32VolumeParse.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\NtfsVolumeParse.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
