@@ -8,7 +8,7 @@ public:
 	CNtfsVolumeParse();
 	virtual ~CNtfsVolumeParse(void);
 
-	virtual BOOL ScanVolume( LPCTSTR lpszVolumeName );
+	virtual BOOL ScanFile( LPCTSTR lpszVolumeName );
 
 	virtual BOOL ScanFileChange(LPCTSTR lpszVolume);
 

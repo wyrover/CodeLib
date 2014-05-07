@@ -170,6 +170,7 @@
     <ClInclude Include="src\NamedPipeClientImpl.h" />
     <ClInclude Include="src\NamedPipeServerImpl.h" />
     <ClInclude Include="src\NamedPipeWrapper.h" />
+    <ClInclude Include="src\NTFSDefine.h" />
     <ClInclude Include="src\NtfsVolumeParse.h" />
     <ClInclude Include="src\ProcessImpl.h" />
     <ClInclude Include="src\ThreadImpl.h" />

@@ -11,7 +11,7 @@ CFat16VolumeParse::~CFat16VolumeParse(void)
 {
 }
 
-BOOL CFat16VolumeParse::ScanVolume( LPCTSTR lpszVolumeName )
+BOOL CFat16VolumeParse::ScanFile( LPCTSTR lpszVolumeName )
 {
 	return FALSE;
 }

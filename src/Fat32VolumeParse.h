@@ -7,7 +7,7 @@ public:
 	CFat32VolumeParse(void);
 	virtual ~CFat32VolumeParse(void);
 
-	virtual BOOL ScanVolume( LPCTSTR lpszVolumeName );
+	virtual BOOL ScanFile( LPCTSTR lpszVolumeName );
 
 	virtual BOOL ScanFileChange( LPCTSTR lpszVolume );
 

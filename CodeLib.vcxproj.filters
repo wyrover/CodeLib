@@ -108,6 +108,9 @@
     <ClInclude Include="src\NtfsVolumeParse.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\NTFSDefine.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

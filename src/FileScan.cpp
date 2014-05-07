@@ -159,7 +159,7 @@ BOOL CFileScan::_ExecCommand(LPCTSTR lpszVolumeName, VOLUME_FS_CMD fsCmd)
     switch(fsCmd)
     {
         case VOLUME_FS_SCANFILE:
-            bRet = pVolumeParse->ScanVolume(lpszVolumeName);
+            bRet = pVolumeParse->ScanFile(lpszVolumeName);
             break;
 
         case VOLUME_FS_SCANFILECHANGE:

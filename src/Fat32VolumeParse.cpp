@@ -11,7 +11,7 @@ CFat32VolumeParse::~CFat32VolumeParse(void)
 {
 }
 
-BOOL CFat32VolumeParse::ScanVolume( LPCTSTR lpszVolumeName )
+BOOL CFat32VolumeParse::ScanFile( LPCTSTR lpszVolumeName )
 {
 	return FALSE;
 }

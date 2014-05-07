@@ -363,7 +363,8 @@ void TestFileScan()
 // 	}
 
 	CFileScan fileScan;
-	fileScan.ExecCommand(VOLUME_FS_SCANFILECHANGE);
+	fileScan.ExecCommand(VOLUME_FS_SCANFILE);
+//	fileScan.ExecCommand(VOLUME_FS_SCANFILECHANGE);
 }
 
 int _tmain(int argc, _TCHAR* argv[])

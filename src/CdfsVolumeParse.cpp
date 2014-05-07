@@ -11,7 +11,7 @@ CCdfsVolumeParse::~CCdfsVolumeParse(void)
 {
 }
 
-BOOL CCdfsVolumeParse::ScanVolume( LPCTSTR lpszVolumeName )
+BOOL CCdfsVolumeParse::ScanFile( LPCTSTR lpszVolumeName )
 {
 	return FALSE;
 }
