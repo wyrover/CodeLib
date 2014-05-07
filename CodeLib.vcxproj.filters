@@ -19,6 +19,15 @@
     <Filter Include="src">
       <UniqueIdentifier>{3436fbcc-472f-49c4-83e5-69ce8212991f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="src\Services">
+      <UniqueIdentifier>{ee3148df-776b-4261-9518-247e0d1f7460}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sample">
+      <UniqueIdentifier>{a9cec680-2206-476f-a43e-f2566f5da070}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Sample\Services">
+      <UniqueIdentifier>{2233e64a-cce9-4fb2-ac78-86a74793a93c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -111,6 +120,18 @@
     <ClInclude Include="src\NTFSDefine.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Services\ServiceBase.h">
+      <Filter>src\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Services\ServiceInstaller.h">
+      <Filter>src\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Services\ThreadPool.h">
+      <Filter>src\Services</Filter>
+    </ClInclude>
+    <ClInclude Include="Sample\Services\SampleService.h">
+      <Filter>Sample\Services</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -163,6 +184,15 @@
     </ClCompile>
     <ClCompile Include="src\NtfsVolumeParse.cpp">
       <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Services\ServiceBase.cpp">
+      <Filter>src\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Services\ServiceInstaller.cpp">
+      <Filter>src\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="Sample\Services\SampleService.cpp">
+      <Filter>Sample\Services</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

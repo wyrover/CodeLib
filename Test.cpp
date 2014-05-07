@@ -15,6 +15,8 @@ using  namespace CODELIB;
 #include "IIPCInterface.h"
 #include "src\NamedPipeServerImpl.h"
 #include "src\FileScan.h"
+#include "src\Services\ServiceInstaller.h"
+#include "Sample\Services\SampleService.h"
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -350,21 +352,58 @@ void TestNamedPipeServer()
 
 void TestFileScan()
 {
-// 	const TCHAR* sDriverName=_T("\\\\.\\C:");
-// 	CNtfsVolumeParse diskVolume(sDriverName);
-// 	if (diskVolume.OpenVolume())
-// 	{
-// 		ULONGLONG fileTotalCount=diskVolume.GetRecordTotalSize();
-// 		if (!diskVolume.ScanVolume())
-// 		{
-// 			_tprintf_s(_T("ÎÄ¼þÉ¨ÃèÊ§°Ü\r\n"));
-// 		}
-// 		diskVolume.CloseVolume();
-// 	}
+//  const TCHAR* sDriverName=_T("\\\\.\\C:");
+//  CNtfsVolumeParse diskVolume(sDriverName);
+//  if (diskVolume.OpenVolume())
+//  {
+//      ULONGLONG fileTotalCount=diskVolume.GetRecordTotalSize();
+//      if (!diskVolume.ScanVolume())
+//      {
+//          _tprintf_s(_T("ÎÄ¼þÉ¨ÃèÊ§°Ü\r\n"));
+//      }
+//      diskVolume.CloseVolume();
+//  }
 
-	CFileScan fileScan;
-	fileScan.ExecCommand(VOLUME_FS_SCANFILE);
-//	fileScan.ExecCommand(VOLUME_FS_SCANFILECHANGE);
+    CFileScan fileScan;
+    fileScan.ExecCommand(VOLUME_FS_SCANFILE);
+//  fileScan.ExecCommand(VOLUME_FS_SCANFILECHANGE);
+}
+
+void TestService()
+{
+    //
+    // Settings of the service
+    //
+
+    // Internal name of the service
+#define SERVICE_NAME             L"CppWindowsService"
+
+    // Displayed name of the service
+#define SERVICE_DISPLAY_NAME     L"CppWindowsService Sample Service"
+
+    // Service start options.
+#define SERVICE_START_TYPE       SERVICE_DEMAND_START
+
+    // List of service dependencies - "dep1\0dep2\0\0"
+#define SERVICE_DEPENDENCIES     L""
+
+    // The name of the account under which the service should run
+#define SERVICE_ACCOUNT          L"NT AUTHORITY\\LocalService"
+
+    // The password to the service account name
+#define SERVICE_PASSWORD         NULL
+
+    InstallService(
+        SERVICE_NAME,               // Name of service
+        SERVICE_DISPLAY_NAME,       // Name to display
+        SERVICE_START_TYPE,         // Service start type
+        SERVICE_DEPENDENCIES,       // Dependencies
+        SERVICE_ACCOUNT,            // Service running account
+        SERVICE_PASSWORD            // Password of the account
+    );
+
+    _getch();
+    UninstallService(SERVICE_NAME);
 }
 
 int _tmain(int argc, _TCHAR* argv[])
@@ -377,7 +416,8 @@ int _tmain(int argc, _TCHAR* argv[])
 //    TestThread();
 //    TestLPC();
 //    TestNamedPipeServer();
-	TestFileScan();
+//  TestFileScan();
+    TestService();
     return 0;
 }
 
