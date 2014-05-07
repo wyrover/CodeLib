@@ -17,6 +17,8 @@ namespace CODELIB
         DWORD GetPID();
         LPCTSTR GetFullPathName();
         BOOL GetIntegrityLevel(INTEGRITYLEVEL* pLevel);
+        HANDLE GetHandle();
+        static DWORD FindProcessIDByName(LPCTSTR lpszName);
     private:
         DWORD m_dwPID;
         HANDLE m_hProcess;

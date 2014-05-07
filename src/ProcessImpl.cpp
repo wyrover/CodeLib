@@ -2,6 +2,7 @@
 #include "ProcessImpl.h"
 #include <assert.h>
 #include <Psapi.h>
+#include <tlhelp32.h>
 
 namespace CODELIB
 {
@@ -137,6 +138,37 @@ namespace CODELIB
         tokenInfo = NULL;
 
         return TRUE;
+    }
+
+    HANDLE CProcessImpl::GetHandle()
+    {
+        return m_hProcess;
+    }
+
+    DWORD CProcessImpl::FindProcessIDByName(LPCTSTR lpszName)
+    {
+        DWORD dwPID = 0;
+        PROCESSENTRY32 pe32 = {sizeof(pe32)};
+        HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+        if(INVALID_HANDLE_VALUE == hProcessSnap) return -1;
+
+        if(Process32First(hProcessSnap, &pe32))
+        {
+            do
+            {
+                if(0 == _tcsicmp(lpszName, pe32.szExeFile))
+                {
+                    dwPID = pe32.th32ProcessID;
+                    break;
+                }
+            }
+            while(Process32Next(hProcessSnap, &pe32));
+        }
+
+        CloseHandle(hProcessSnap);
+        hProcessSnap = NULL;
+        return dwPID;
     }
 
 }

@@ -23,5 +23,6 @@ namespace CODELIB
         virtual DWORD GetPID() = 0;
         virtual LPCTSTR GetFullPathName() = 0;
         virtual BOOL GetIntegrityLevel(INTEGRITYLEVEL* pLevel) = 0;
+        virtual HANDLE GetHandle() = 0;
     };
 }
