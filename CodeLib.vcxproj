@@ -177,6 +177,7 @@
     <ClInclude Include="src\Services\ServiceBase.h" />
     <ClInclude Include="src\Services\ServiceInstaller.h" />
     <ClInclude Include="src\Services\ThreadPool.h" />
+    <ClInclude Include="src\SparseFiles.h" />
     <ClInclude Include="src\ThreadImpl.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
@@ -199,6 +200,7 @@
     <ClCompile Include="src\ProcessImpl.cpp" />
     <ClCompile Include="src\Services\ServiceBase.cpp" />
     <ClCompile Include="src\Services\ServiceInstaller.cpp" />
+    <ClCompile Include="src\SparseFiles.cpp" />
     <ClCompile Include="src\ThreadImpl.cpp" />
     <ClCompile Include="Test.cpp" />
     <ClCompile Include="stdafx.cpp">

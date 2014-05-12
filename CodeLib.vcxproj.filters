@@ -132,6 +132,9 @@
     <ClInclude Include="Sample\Services\SampleService.h">
       <Filter>Sample\Services</Filter>
     </ClInclude>
+    <ClInclude Include="src\SparseFiles.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -193,6 +196,9 @@
     </ClCompile>
     <ClCompile Include="Sample\Services\SampleService.cpp">
       <Filter>Sample\Services</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SparseFiles.cpp">
+      <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
