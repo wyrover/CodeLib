@@ -1,5 +1,7 @@
 #pragma once
 #include "IProcess.h"
+#include <vector>
+#include <tlhelp32.h>
 
 namespace CODELIB
 {
@@ -19,6 +21,7 @@ namespace CODELIB
         BOOL GetIntegrityLevel(INTEGRITYLEVEL* pLevel);
         HANDLE GetHandle();
         static DWORD FindProcessIDByName(LPCTSTR lpszName);
+		static BOOL EnumProcess(std::vector<PROCESSENTRY32>& proVec);
     private:
         DWORD m_dwPID;
         HANDLE m_hProcess;

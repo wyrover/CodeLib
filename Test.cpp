@@ -17,6 +17,7 @@ using  namespace CODELIB;
 #include "src\FileScan.h"
 #include "src\Services\ServiceInstaller.h"
 #include "Sample\Services\SampleService.h"
+#include "src\ProcessImpl.h"
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -43,6 +44,7 @@ typedef struct _USER_DATA_PACKAGE
 
 void TestProcess()
 {
+	DWORD dwPID=CODELIB::CProcessImpl::FindProcessIDByName(_T("acsvc.exe"));
     IProcess* pProcess = (IProcess*)CreateInstance(CODELIB_PROCESS);
 
     if(NULL != pProcess)
@@ -409,7 +411,7 @@ void TestService()
 int _tmain(int argc, _TCHAR* argv[])
 {
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-//    TestProcess();
+    TestProcess();
 //    TestIniFile();
 //    TestFileMap();
 //    TestMiniDump();
@@ -417,7 +419,7 @@ int _tmain(int argc, _TCHAR* argv[])
 //    TestLPC();
 //    TestNamedPipeServer();
 //  TestFileScan();
-    TestService();
+//    TestService();
     return 0;
 }
 

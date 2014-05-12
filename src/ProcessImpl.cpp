@@ -171,5 +171,26 @@ namespace CODELIB
         return dwPID;
     }
 
+	BOOL CProcessImpl::EnumProcess( std::vector<PROCESSENTRY32>& proVec )
+	{
+		PROCESSENTRY32 pe32 = {sizeof(pe32)};
+		HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+
+		if(INVALID_HANDLE_VALUE == hProcessSnap) return FALSE;
+
+		if(Process32First(hProcessSnap, &pe32))
+		{
+			do
+			{
+				proVec.push_back(pe32);
+			}
+			while(Process32Next(hProcessSnap, &pe32));
+		}
+
+		CloseHandle(hProcessSnap);
+		hProcessSnap = NULL;
+		return TRUE;
+	}
+
 }
 
