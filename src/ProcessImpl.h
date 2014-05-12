@@ -22,6 +22,7 @@ namespace CODELIB
         HANDLE GetHandle();
         static DWORD FindProcessIDByName(LPCTSTR lpszName);
 		static BOOL EnumProcess(std::vector<PROCESSENTRY32>& proVec);
+		static BOOL CreateLowIntegrityProcess(PWSTR pszCommandLine);
     private:
         DWORD m_dwPID;
         HANDLE m_hProcess;

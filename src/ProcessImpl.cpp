@@ -192,5 +192,99 @@ namespace CODELIB
 		return TRUE;
 	}
 
+	BOOL CProcessImpl::CreateLowIntegrityProcess(PWSTR pszCommandLine)
+	{
+		DWORD dwError = ERROR_SUCCESS;
+		HANDLE hToken = NULL;
+		HANDLE hNewToken = NULL;
+		SID_IDENTIFIER_AUTHORITY MLAuthority = SECURITY_MANDATORY_LABEL_AUTHORITY;
+		PSID pIntegritySid = NULL;
+		TOKEN_MANDATORY_LABEL tml = { 0 };
+		STARTUPINFO si = { sizeof(si) };
+		PROCESS_INFORMATION pi = { 0 };
+
+		// Open the primary access token of the process.
+		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY |
+			TOKEN_ADJUST_DEFAULT | TOKEN_ASSIGN_PRIMARY, &hToken))
+		{
+			dwError = GetLastError();
+			goto Cleanup;
+		}
+
+		// Duplicate the primary token of the current process.
+		if (!DuplicateTokenEx(hToken, 0, NULL, SecurityImpersonation, 
+			TokenPrimary, &hNewToken))
+		{
+			dwError = GetLastError();
+			goto Cleanup;
+		}
+
+		// Create the low integrity SID.
+		if (!AllocateAndInitializeSid(&MLAuthority, 1, SECURITY_MANDATORY_LOW_RID, 
+			0, 0, 0, 0, 0, 0, 0, &pIntegritySid))
+		{
+			dwError = GetLastError();
+			goto Cleanup;
+		}
+
+		tml.Label.Attributes = SE_GROUP_INTEGRITY;
+		tml.Label.Sid = pIntegritySid;
+
+		// Set the integrity level in the access token to low.
+		if (!SetTokenInformation(hNewToken, TokenIntegrityLevel, &tml, 
+			(sizeof(tml) + GetLengthSid(pIntegritySid))))
+		{
+			dwError = GetLastError();
+			goto Cleanup;
+		}
+
+		// Create the new process at the Low integrity level.
+		if (!CreateProcessAsUser(hNewToken, NULL, pszCommandLine, NULL, NULL, 
+			FALSE, 0, NULL, NULL, &si, &pi))
+		{
+			dwError = GetLastError();
+			goto Cleanup;
+		}
+
+Cleanup:
+		// Centralized cleanup for all allocated resources.
+		if (hToken)
+		{
+			CloseHandle(hToken);
+			hToken = NULL;
+		}
+		if (hNewToken)
+		{
+			CloseHandle(hNewToken);
+			hNewToken = NULL;
+		}
+		if (pIntegritySid)
+		{
+			FreeSid(pIntegritySid);
+			pIntegritySid = NULL;
+		}
+		if (pi.hProcess)
+		{
+			CloseHandle(pi.hProcess);
+			pi.hProcess = NULL;
+		}
+		if (pi.hThread)
+		{
+			CloseHandle(pi.hThread);
+			pi.hThread = NULL;
+		}
+
+		if (ERROR_SUCCESS != dwError)
+		{
+			// Make sure that the error code is set for failure.
+			SetLastError(dwError);
+			return FALSE;
+		}
+		else
+		{
+			return TRUE;
+		}
+	}
+
 }
 
