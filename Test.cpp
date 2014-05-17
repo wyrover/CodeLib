@@ -18,6 +18,9 @@ using  namespace CODELIB;
 #include "src\Services\ServiceInstaller.h"
 #include "Sample\Services\SampleService.h"
 #include "src\ProcessImpl.h"
+#include "src\ICallBack.h"
+#include "src\Keyboard.h"
+#include "src\ThreadWithFunc.h"
 
 #ifdef _DEBUG
 #ifndef DBG_NEW
@@ -44,7 +47,7 @@ typedef struct _USER_DATA_PACKAGE
 
 void TestProcess()
 {
-	DWORD dwPID=CODELIB::CProcessImpl::FindProcessIDByName(_T("acsvc.exe"));
+    DWORD dwPID = CODELIB::CProcessImpl::FindProcessIDByName(_T("acsvc.exe"));
     IProcess* pProcess = (IProcess*)CreateInstance(CODELIB_PROCESS);
 
     if(NULL != pProcess)
@@ -408,18 +411,69 @@ void TestService()
     UninstallService(SERVICE_NAME);
 }
 
+class CCallback : public ICallBack
+{
+public:
+    CCallback()
+    {
+
+    }
+    virtual ~CCallback()
+    {
+
+    }
+
+    virtual BOOL HandleRequest(IRequest* pRequest)
+    {
+        if(NULL == pRequest) return FALSE;
+
+        REQUEST_TYPE requestType = pRequest->GetType();
+
+        switch(requestType)
+        {
+            case REQUEST_KEYBOARDHOOK:
+            {
+                CKeyboardHookRequest* pKeyboardHookRequest = (CKeyboardHookRequest*)pRequest;
+                _tprintf_s(pKeyboardHookRequest->GetDebugInfo());
+                break;
+            }
+
+            default:
+                break;
+        }
+
+        return FALSE;
+    }
+};
+
+static ICallBack* g_Callback = NULL;
+
+DWORD TestKeyboardHook(LPVOID lpParam)
+{
+    CKeyboardHook keyboardHook(g_Callback);
+    keyboardHook.Install(GetCurrentProcessId());
+    keyboardHook.UnInstall();
+    return TRUE;
+}
+
 int _tmain(int argc, _TCHAR* argv[])
 {
+    g_Callback = new CCallback;
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    TestProcess();
+//    TestProcess();
 //    TestIniFile();
 //    TestFileMap();
 //    TestMiniDump();
 //    TestThread();
 //    TestLPC();
 //    TestNamedPipeServer();
-//  TestFileScan();
+//    TestFileScan();
 //    TestService();
+
+//  CODELIB::CThread thread(TestKeyboardHook,g_Callback);
+    TestKeyboardHook(NULL);
+    delete g_Callback;
+    g_Callback = NULL;
     return 0;
 }
 

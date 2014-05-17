@@ -158,11 +158,14 @@
     <ClInclude Include="include\IVolumeParse.h" />
     <ClInclude Include="Sample\Services\SampleService.h" />
     <ClInclude Include="src\CdfsVolumeParse.h" />
+    <ClInclude Include="src\CommonFunc.h" />
     <ClInclude Include="src\Fat16VolumeParse.h" />
     <ClInclude Include="src\Fat32VolumeParse.h" />
     <ClInclude Include="src\FileScan.h" />
+    <ClInclude Include="src\ICallBack.h" />
     <ClInclude Include="src\IoCompletePort.h" />
     <ClInclude Include="src\IPCMessage.h" />
+    <ClInclude Include="src\Keyboard.h" />
     <ClInclude Include="src\LPCClientImpl.h" />
     <ClInclude Include="src\LPCServerImpl.h" />
     <ClInclude Include="src\MiniDumpImpl.h" />
@@ -179,15 +182,18 @@
     <ClInclude Include="src\Services\ThreadPool.h" />
     <ClInclude Include="src\SparseFiles.h" />
     <ClInclude Include="src\ThreadImpl.h" />
+    <ClInclude Include="src\ThreadWithFunc.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Sample\Services\SampleService.cpp" />
     <ClCompile Include="src\CdfsVolumeParse.cpp" />
+    <ClCompile Include="src\CommonFunc.cpp" />
     <ClCompile Include="src\Fat16VolumeParse.cpp" />
     <ClCompile Include="src\Fat32VolumeParse.cpp" />
     <ClCompile Include="src\FileScan.cpp" />
+    <ClCompile Include="src\Keyboard.cpp" />
     <ClCompile Include="src\LPCClientImpl.cpp" />
     <ClCompile Include="src\LPCServerImpl.cpp" />
     <ClCompile Include="src\MiniDumpImpl.cpp" />
@@ -202,6 +208,7 @@
     <ClCompile Include="src\Services\ServiceInstaller.cpp" />
     <ClCompile Include="src\SparseFiles.cpp" />
     <ClCompile Include="src\ThreadImpl.cpp" />
+    <ClCompile Include="src\ThreadWithFunc.cpp" />
     <ClCompile Include="Test.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>

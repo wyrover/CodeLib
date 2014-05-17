@@ -135,6 +135,18 @@
     <ClInclude Include="src\SparseFiles.h">
       <Filter>src</Filter>
     </ClInclude>
+    <ClInclude Include="src\Keyboard.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ICallBack.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ThreadWithFunc.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\CommonFunc.h">
+      <Filter>src</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -198,6 +210,15 @@
       <Filter>Sample\Services</Filter>
     </ClCompile>
     <ClCompile Include="src\SparseFiles.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Keyboard.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ThreadWithFunc.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\CommonFunc.cpp">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
