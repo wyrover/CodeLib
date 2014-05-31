@@ -15,6 +15,7 @@ namespace CODELIB
     {
     public:
         virtual ~IProcess() = 0 {};
+		virtual BOOL IsOpened()=0;
         virtual BOOL Open(DWORD dwPID) = 0;
         virtual void Close() = 0;
         virtual BOOL Terminate() = 0;
@@ -24,5 +25,6 @@ namespace CODELIB
         virtual LPCTSTR GetFullPathName() = 0;
         virtual BOOL GetIntegrityLevel(INTEGRITYLEVEL* pLevel) = 0;
         virtual HANDLE GetHandle() = 0;
+        virtual SIZE_T VirtualQueryEx(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength) = 0;
     };
 }

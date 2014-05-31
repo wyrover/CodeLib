@@ -21,7 +21,7 @@ private:
 class CKeyboardHook
 {
 public:
-    CKeyboardHook(ICallBack* pCallback);
+    CKeyboardHook(IRequestHandler* pCallback);
     virtual ~CKeyboardHook();
 
     BOOL Install(DWORD dwPID);
@@ -30,7 +30,7 @@ protected:
 	void PrintDebugInfo(LPCTSTR lpszInfo);
 	static LRESULT CALLBACK _HookProc(int nCode, WPARAM wParam, LPARAM lParam);
 private:
-    ICallBack* m_pCallback;
+    IRequestHandler* m_pCallback;
     CKeyboardHookRequest* m_pRequest;
 	static HHOOK m_hHook;
 };

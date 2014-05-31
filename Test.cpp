@@ -411,7 +411,7 @@ void TestService()
     UninstallService(SERVICE_NAME);
 }
 
-class CCallback : public ICallBack
+class CCallback : public IRequestHandler
 {
 public:
     CCallback()
@@ -446,12 +446,13 @@ public:
     }
 };
 
-static ICallBack* g_Callback = NULL;
+static IRequestHandler* g_Callback = NULL;
 
 DWORD TestKeyboardHook(LPVOID lpParam)
 {
     CKeyboardHook keyboardHook(g_Callback);
     keyboardHook.Install(GetCurrentProcessId());
+	
     keyboardHook.UnInstall();
     return TRUE;
 }

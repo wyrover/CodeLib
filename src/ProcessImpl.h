@@ -11,6 +11,7 @@ namespace CODELIB
         CProcessImpl(void);
         virtual ~CProcessImpl(void);
     public:
+		BOOL IsOpened();
         BOOL Open(DWORD dwPID);
         void Close();
         BOOL Terminate();
@@ -21,8 +22,9 @@ namespace CODELIB
         BOOL GetIntegrityLevel(INTEGRITYLEVEL* pLevel);
         HANDLE GetHandle();
         static DWORD FindProcessIDByName(LPCTSTR lpszName);
-		static BOOL EnumProcess(std::vector<PROCESSENTRY32>& proVec);
-		static BOOL CreateLowIntegrityProcess(PWSTR pszCommandLine);
+        static BOOL EnumProcess(std::vector<PROCESSENTRY32>& proVec);
+        static BOOL CreateLowIntegrityProcess(PWSTR pszCommandLine);
+        SIZE_T VirtualQueryEx(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength);
     private:
         DWORD m_dwPID;
         HANDLE m_hProcess;

@@ -3,7 +3,7 @@
 #include "CommonFunc.h"
 
 HHOOK CKeyboardHook::m_hHook = NULL;
-CKeyboardHook::CKeyboardHook(ICallBack* pCallback): m_pCallback(pCallback), m_pRequest(NULL)
+CKeyboardHook::CKeyboardHook(IRequestHandler* pCallback): m_pCallback(pCallback), m_pRequest(NULL)
 {
     m_pRequest = new CKeyboardHookRequest;
 }

@@ -3,7 +3,7 @@
 #include <assert.h>
 #include <Psapi.h>
 #include <tlhelp32.h>
-
+#pragma comment(lib,"Psapi.lib")
 namespace CODELIB
 {
     CProcessImpl::CProcessImpl(void): m_dwPID(-1), m_hProcess(NULL)
@@ -171,120 +171,135 @@ namespace CODELIB
         return dwPID;
     }
 
-	BOOL CProcessImpl::EnumProcess( std::vector<PROCESSENTRY32>& proVec )
-	{
-		PROCESSENTRY32 pe32 = {sizeof(pe32)};
-		HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+    BOOL CProcessImpl::EnumProcess(std::vector<PROCESSENTRY32>& proVec)
+    {
+        PROCESSENTRY32 pe32 = {sizeof(pe32)};
+        HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 
-		if(INVALID_HANDLE_VALUE == hProcessSnap) return FALSE;
+        if(INVALID_HANDLE_VALUE == hProcessSnap) return FALSE;
 
-		if(Process32First(hProcessSnap, &pe32))
-		{
-			do
-			{
-				proVec.push_back(pe32);
-			}
-			while(Process32Next(hProcessSnap, &pe32));
-		}
+        if(Process32First(hProcessSnap, &pe32))
+        {
+            do
+            {
+                proVec.push_back(pe32);
+            }
+            while(Process32Next(hProcessSnap, &pe32));
+        }
 
-		CloseHandle(hProcessSnap);
-		hProcessSnap = NULL;
-		return TRUE;
-	}
+        CloseHandle(hProcessSnap);
+        hProcessSnap = NULL;
+        return TRUE;
+    }
 
-	BOOL CProcessImpl::CreateLowIntegrityProcess(PWSTR pszCommandLine)
-	{
-		DWORD dwError = ERROR_SUCCESS;
-		HANDLE hToken = NULL;
-		HANDLE hNewToken = NULL;
-		SID_IDENTIFIER_AUTHORITY MLAuthority = SECURITY_MANDATORY_LABEL_AUTHORITY;
-		PSID pIntegritySid = NULL;
-		TOKEN_MANDATORY_LABEL tml = { 0 };
-		STARTUPINFO si = { sizeof(si) };
-		PROCESS_INFORMATION pi = { 0 };
+    BOOL CProcessImpl::CreateLowIntegrityProcess(PWSTR pszCommandLine)
+    {
+        DWORD dwError = ERROR_SUCCESS;
+        HANDLE hToken = NULL;
+        HANDLE hNewToken = NULL;
+        SID_IDENTIFIER_AUTHORITY MLAuthority = SECURITY_MANDATORY_LABEL_AUTHORITY;
+        PSID pIntegritySid = NULL;
+        TOKEN_MANDATORY_LABEL tml = { 0 };
+        STARTUPINFO si = { sizeof(si) };
+        PROCESS_INFORMATION pi = { 0 };
 
-		// Open the primary access token of the process.
-		if (!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY |
-			TOKEN_ADJUST_DEFAULT | TOKEN_ASSIGN_PRIMARY, &hToken))
-		{
-			dwError = GetLastError();
-			goto Cleanup;
-		}
+        // Open the primary access token of the process.
+        if(!OpenProcessToken(GetCurrentProcess(), TOKEN_DUPLICATE | TOKEN_QUERY |
+                             TOKEN_ADJUST_DEFAULT | TOKEN_ASSIGN_PRIMARY, &hToken))
+        {
+            dwError = GetLastError();
+            goto Cleanup;
+        }
 
-		// Duplicate the primary token of the current process.
-		if (!DuplicateTokenEx(hToken, 0, NULL, SecurityImpersonation, 
-			TokenPrimary, &hNewToken))
-		{
-			dwError = GetLastError();
-			goto Cleanup;
-		}
+        // Duplicate the primary token of the current process.
+        if(!DuplicateTokenEx(hToken, 0, NULL, SecurityImpersonation,
+                             TokenPrimary, &hNewToken))
+        {
+            dwError = GetLastError();
+            goto Cleanup;
+        }
 
-		// Create the low integrity SID.
-		if (!AllocateAndInitializeSid(&MLAuthority, 1, SECURITY_MANDATORY_LOW_RID, 
-			0, 0, 0, 0, 0, 0, 0, &pIntegritySid))
-		{
-			dwError = GetLastError();
-			goto Cleanup;
-		}
+        // Create the low integrity SID.
+        if(!AllocateAndInitializeSid(&MLAuthority, 1, SECURITY_MANDATORY_LOW_RID,
+                                     0, 0, 0, 0, 0, 0, 0, &pIntegritySid))
+        {
+            dwError = GetLastError();
+            goto Cleanup;
+        }
 
-		tml.Label.Attributes = SE_GROUP_INTEGRITY;
-		tml.Label.Sid = pIntegritySid;
+        tml.Label.Attributes = SE_GROUP_INTEGRITY;
+        tml.Label.Sid = pIntegritySid;
 
-		// Set the integrity level in the access token to low.
-		if (!SetTokenInformation(hNewToken, TokenIntegrityLevel, &tml, 
-			(sizeof(tml) + GetLengthSid(pIntegritySid))))
-		{
-			dwError = GetLastError();
-			goto Cleanup;
-		}
+        // Set the integrity level in the access token to low.
+        if(!SetTokenInformation(hNewToken, TokenIntegrityLevel, &tml,
+                                (sizeof(tml) + GetLengthSid(pIntegritySid))))
+        {
+            dwError = GetLastError();
+            goto Cleanup;
+        }
 
-		// Create the new process at the Low integrity level.
-		if (!CreateProcessAsUser(hNewToken, NULL, pszCommandLine, NULL, NULL, 
-			FALSE, 0, NULL, NULL, &si, &pi))
-		{
-			dwError = GetLastError();
-			goto Cleanup;
-		}
+        // Create the new process at the Low integrity level.
+        if(!CreateProcessAsUser(hNewToken, NULL, pszCommandLine, NULL, NULL,
+                                FALSE, 0, NULL, NULL, &si, &pi))
+        {
+            dwError = GetLastError();
+            goto Cleanup;
+        }
 
 Cleanup:
-		// Centralized cleanup for all allocated resources.
-		if (hToken)
-		{
-			CloseHandle(hToken);
-			hToken = NULL;
-		}
-		if (hNewToken)
-		{
-			CloseHandle(hNewToken);
-			hNewToken = NULL;
-		}
-		if (pIntegritySid)
-		{
-			FreeSid(pIntegritySid);
-			pIntegritySid = NULL;
-		}
-		if (pi.hProcess)
-		{
-			CloseHandle(pi.hProcess);
-			pi.hProcess = NULL;
-		}
-		if (pi.hThread)
-		{
-			CloseHandle(pi.hThread);
-			pi.hThread = NULL;
-		}
 
-		if (ERROR_SUCCESS != dwError)
-		{
-			// Make sure that the error code is set for failure.
-			SetLastError(dwError);
-			return FALSE;
-		}
-		else
-		{
-			return TRUE;
-		}
-	}
+        // Centralized cleanup for all allocated resources.
+        if(hToken)
+        {
+            CloseHandle(hToken);
+            hToken = NULL;
+        }
+
+        if(hNewToken)
+        {
+            CloseHandle(hNewToken);
+            hNewToken = NULL;
+        }
+
+        if(pIntegritySid)
+        {
+            FreeSid(pIntegritySid);
+            pIntegritySid = NULL;
+        }
+
+        if(pi.hProcess)
+        {
+            CloseHandle(pi.hProcess);
+            pi.hProcess = NULL;
+        }
+
+        if(pi.hThread)
+        {
+            CloseHandle(pi.hThread);
+            pi.hThread = NULL;
+        }
+
+        if(ERROR_SUCCESS != dwError)
+        {
+            // Make sure that the error code is set for failure.
+            SetLastError(dwError);
+            return FALSE;
+        }
+        else
+        {
+            return TRUE;
+        }
+    }
+
+    SIZE_T CProcessImpl::VirtualQueryEx(LPCVOID lpAddress, PMEMORY_BASIC_INFORMATION lpBuffer, SIZE_T dwLength)
+    {
+        return ::VirtualQueryEx(m_hProcess, lpAddress, lpBuffer, dwLength);
+    }
+
+    BOOL CProcessImpl::IsOpened()
+    {
+        return (NULL != m_hProcess);
+    }
 
 }
 
